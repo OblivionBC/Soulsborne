@@ -25,21 +25,13 @@ class SOULSBORNE_API APlayerCharacter : public ACharacter, public IAbilitySystem
 {
 	GENERATED_BODY()
 
-	//Ability System Component 
-		//This is a bridge between the Charactor and the Gameplay Ability System
-		//Gameplay ability system is a framwework for building attributes, abilities, and interactions that an actor can own and trigger
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	class UAbilitySystemComponent* AbilitySystemComponent;
-
-	UPROPERTY()
-	class USoulAttributeSet* Attributes;
-
 public:
 	// Sets default values for this character's properties
 	APlayerCharacter();
 
-	//Override this to initialize the ability system component
-	UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	/**	----------------------------------- Functions ------------------------------------ **/
+	/* Attribute Functions   */
+	virtual void InitializeAttributes();
 
 	virtual void GetHealth_Implementation(double& Result) const override;
 	virtual void GetHealthAsRatio_Implementation(double& Result) const override;
@@ -47,6 +39,43 @@ public:
 	virtual void GetMana_Implementation(double& Result) const override;
 	virtual void GetManaAsRatio_Implementation(double& Result) const override;
 	virtual void GetStaminaAsRatio_Implementation(double& Result) const override;
+
+	/* MISC */
+	void AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName);
+
+	/*  Base Functions  */
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+
+
+
+	/* Ability System Functions */
+	UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	virtual void GiveDefaultAbilities();
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
+	virtual void ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply);
+	UFUNCTION(BlueprintCallable)
+	 void HandleMeleeAttack();
+
+
+	/* Input Functions */
+	virtual void MoveForward(const FInputActionValue& Value);
+	virtual void MoveRight(const FInputActionValue& Value);
+	virtual void LookRight(const FInputActionValue& Value);
+	virtual void LookUp(const FInputActionValue& Value);
+	virtual void Attack(const FInputActionValue& Value);
+	virtual void Roll(const FInputActionValue& Value);
+	virtual void Block(const FInputActionValue& Value);
+	virtual void BlockComplete(const FInputActionValue& Value);
+	virtual void PlayerJump(const FInputActionValue& Value);
+
+	/**	----------------------------------- Properties ------------------------------------ **/
+	/*  Attributes */
+
+	UPROPERTY()
+	class USoulAttributeSet* Attributes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	int MaxHealth = 100;
@@ -60,18 +89,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	int MaxStat = 99;
 
-	virtual void BeginPlay() override;
-
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	virtual void PossessedBy(AController* NewController) override;
-	virtual void OnRep_PlayerState() override;
-	virtual void InitializeAttributes();
-	virtual void GiveDefaultAbilities();
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
-
-	void AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName);
+	/* Abilities */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	class UAbilitySystemComponent* AbilitySystemComponent;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")
 	TSubclassOf<class UGameplayEffect> DefaultAttributeEffect;
@@ -82,34 +102,35 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayEffect> StartingStatEffect;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayEffect> RechargeStaminaEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayEffect> UseStamina;
+
+	/* Camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* Camera;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* SpringArm;
 
+	/* Equipment */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
 	TSubclassOf<AActor> LHandArmament;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
 	TSubclassOf<AActor> RHandArmament;
 
+	/* UI */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	UUserWidget* PlayerHUD;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> HUDWidget;
 
+	/* Input */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* MyInputMappingContext;
-
-	virtual void MoveForward(const FInputActionValue& Value);
-	virtual void MoveRight(const FInputActionValue& Value);
-	virtual void LookRight(const FInputActionValue& Value);
-	virtual void LookUp(const FInputActionValue& Value);
-	virtual void Attack(const FInputActionValue& Value);
-	virtual void Roll(const FInputActionValue& Value);
-	virtual void Block(const FInputActionValue& Value);
-	virtual void PlayerJump(const FInputActionValue& Value);
 
 };

@@ -4,6 +4,7 @@
 #include "AbilitySystemComponent.h"						 // This is the header file for the ability system component class
 #include "SoulAttributeSet.h"						     // This is the header file for the soul attribute set class
 
+/** ----------------------- Base Functions ---------------------- **/
 /** Sets default values */
 ASoulCharacter::ASoulCharacter()
 {
@@ -16,7 +17,6 @@ ASoulCharacter::ASoulCharacter()
 	Attributes = CreateDefaultSubobject<USoulAttributeSet>("AttributesSet");
 }
 
-/** Override to return the ability system component */
 UAbilitySystemComponent* ASoulCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
@@ -35,7 +35,6 @@ void ASoulCharacter::PossessedBy(AController* NewController)
 	InitializeAttributes();
 	GiveDefaultAbilities();
 }
-
 /** Called when the player state is replicated */
 void ASoulCharacter::OnRep_PlayerState()
 {

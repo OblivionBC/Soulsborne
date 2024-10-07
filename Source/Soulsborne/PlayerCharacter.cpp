@@ -11,8 +11,11 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "ProgressBarInterface.h"
+#include "GameplayTagsModule.h"
+#include "GameplayAbilitySpec.h"
+#include "Kismet/KismetSystemLibrary.h"
 
-
+/*** ----------------------- Base Functions ---------------------- ***/
 
 /** Sets default values */
 APlayerCharacter::APlayerCharacter()
@@ -45,10 +48,74 @@ APlayerCharacter::APlayerCharacter()
 
 }
 
-/** Override to return the ability system component */
-UAbilitySystemComponent* APlayerCharacter::GetAbilitySystemComponent() const
+/** Called when the game starts or when spawned */
+void APlayerCharacter::BeginPlay()
 {
-	return AbilitySystemComponent;
+	Super::BeginPlay();
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		PlayerController->SetInputMode(FInputModeGameOnly());
+		if (HUDWidget)
+		{
+			PlayerHUD = CreateWidget<UUserWidget>(PlayerController, HUDWidget, "HUD");
+			check(PlayerHUD);
+			PlayerHUD->AddToPlayerScreen();
+
+		}
+		//Static call for now
+		FName rightSocketName = "righthandSocket";
+		AttatchEquipment(LHandArmament, rightSocketName);
+
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(MyInputMappingContext, 1);
+		}
+
+	}
+}
+
+/** Called every frame */
+void APlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+/** Called when the character is possessed by a controller */
+void APlayerCharacter::PossessedBy(AController* NewController)
+{
+	// Call the base class version
+	Super::PossessedBy(NewController);
+
+	if (AbilitySystemComponent) {
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+	// Initialize the attributes and give default abilities
+	InitializeAttributes();
+	GiveDefaultAbilities();
+}
+
+/** Called when the player state is replicated */
+void APlayerCharacter::OnRep_PlayerState()
+{
+	// Call the base class version
+	Super::OnRep_PlayerState();
+
+	if (AbilitySystemComponent) {
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+	// Initialize the attributes and give default abilities
+	InitializeAttributes();
+	GiveDefaultAbilities();
+}
+
+/*** ----------------------- Attribute Functions ---------------------- ***/
+
+/** Initialize the character's attributes */
+void APlayerCharacter::InitializeAttributes()
+{
+	ApplyGameplayEffectToSelf(StartingStatEffect);
+	ApplyGameplayEffectToSelf(RechargeStaminaEffect);
 }
 
 /** Player Progress Bar Interface Implementations **/
@@ -101,51 +168,51 @@ void APlayerCharacter::GetHealthAsRatio_Implementation(double& Result) const {
 	}
 }
 
-/** Called when the character is possessed by a controller */
-void APlayerCharacter::PossessedBy(AController* NewController)
-{
-	// Call the base class version
-	Super::PossessedBy(NewController);
+/*** --------------------------------- Abilities ------------------------------- ***/
 
-	if (AbilitySystemComponent) {
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+void APlayerCharacter::HandleMeleeAttack() {
+	USkeletalMeshComponent* PlayerMesh = GetMesh();
+	if (PlayerMesh) {
+		FName rightSocketName = "righthandSocket";
+		FVector RightSocketLocation = PlayerMesh->GetSocketLocation(rightSocketName);
+		float SphereRadius = 200.0f;
+		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+		TArray<AActor*> ActorsToIgnore;
+		ActorsToIgnore.Add(this);
+		TArray<AActor*> OverlappedActors;
+		UKismetSystemLibrary::SphereOverlapActors(
+			GetWorld(), RightSocketLocation, SphereRadius, ObjectTypes, nullptr, ActorsToIgnore, OverlappedActors
+		);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Handled"));
+		for (AActor* Actor : OverlappedActors) {
+			//AActor* Instigator = GetInstigator();
+			UE_LOG(LogTemp, Warning, TEXT("Overlapped Actor: %s"), *Actor->GetName());
+		}
 	}
-	// Initialize the attributes and give default abilities
-	InitializeAttributes();
-	GiveDefaultAbilities();
 }
-
-/** Called when the player state is replicated */
-void APlayerCharacter::OnRep_PlayerState()
-{
-	// Call the base class version
-	Super::OnRep_PlayerState();
-
-	if (AbilitySystemComponent) {
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-	}
-	// Initialize the attributes and give default abilities
-	InitializeAttributes();
-	GiveDefaultAbilities();
-}
-
-/** Initialize the character's attributes */
-void APlayerCharacter::InitializeAttributes()
-{
-	if (AbilitySystemComponent && StartingStatEffect) {
+//Apply a gameplay effect to player
+void APlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply) {
+	if (AbilitySystemComponent && EffectToApply) {
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
 		//EffectContext.AddSourceObject(this);
 
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(StartingStatEffect, 1.0f, EffectContext);
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectToApply, 1.0f, EffectContext);
 		if (SpecHandle.IsValid())
 		{
 			FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			if (GEngine)
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Effect Applied"));
 			}
 		}
 	}
+}
+
+/** Override to return the ability system component */
+UAbilitySystemComponent* APlayerCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
 }
 
 /** Give the character default abilities */
@@ -161,6 +228,33 @@ void APlayerCharacter::GiveDefaultAbilities()
 		}
 	}
 }
+
+//Used to attatch equipment to the socket name specified, currently static for development purposes
+void APlayerCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName) {
+		USkeletalMeshComponent* PlayerMesh = GetMesh();
+		if (PlayerMesh && LHandArmament && RHandArmament) {
+			FName rightSocketName = "righthandSocket";
+			FName leftSocketName = "lefthandSocket";
+			FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
+			FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
+
+			FActorSpawnParameters SpawnParams;
+			AActor* LeftActor = GetWorld()->SpawnActor<AActor>(LHandArmament, LeftSocketT, SpawnParams);
+			AActor* RightActor = GetWorld()->SpawnActor<AActor>(RHandArmament, RightSocketT, SpawnParams);
+
+			LeftActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
+			RightActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
+			}
+
+		}
+
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////             Inputs                /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -182,6 +276,8 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this, &APlayerCharacter::MoveForward);
 		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Triggered, this, &APlayerCharacter::Block);
+		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Ongoing, this, &APlayerCharacter::Block);
+		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Completed, this, &APlayerCharacter::BlockComplete);
 		EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerJump);
 		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this, &APlayerCharacter::LookRight);
 		EnhancedInputComponent->BindAction(IA_LookUp, ETriggerEvent::Triggered, this, &APlayerCharacter::LookUp);
@@ -190,84 +286,69 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	}
 }
 
-/** Called when the game starts or when spawned */
-void APlayerCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		PlayerController->SetInputMode(FInputModeGameOnly());
-		if (HUDWidget)
-		{
-			PlayerHUD = CreateWidget<UUserWidget>(PlayerController, HUDWidget, "HUD");
-			check(PlayerHUD);
-			PlayerHUD->AddToPlayerScreen();
-
-		}
-		//Static call for now
-		FName rightSocketName = "righthandSocket";
-		AttatchEquipment(LHandArmament, rightSocketName);
-
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(MyInputMappingContext, 1);
-		}
-
-	}
-
-}
-
-/** Called every frame */
-void APlayerCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
-//Used to attatch equipment to the socket name specified, currently static for development purposes
-void APlayerCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName) {
-	if (LHandArmament && RHandArmament) {
-		USkeletalMeshComponent* PlayerMesh = GetMesh();
-		if (PlayerMesh && LHandArmament && RHandArmament) {
-			FName rightSocketName = "righthandSocket";
-			FName leftSocketName = "lefthandSocket";
-			FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
-			FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
-
-			FActorSpawnParameters SpawnParams;
-			AActor* LeftActor = GetWorld()->SpawnActor<AActor>(LHandArmament, LeftSocketT, SpawnParams);
-			AActor* RightActor = GetWorld()->SpawnActor<AActor>(RHandArmament, RightSocketT, SpawnParams);
-
-			LeftActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
-			RightActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
-
-
-		}
-
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////////////             Inputs                /////////////////////////////////////////////////////////////////////////////////////////////////
 void APlayerCharacter::Attack(const FInputActionValue& Value)
 {
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
 	}
-
+	ApplyGameplayEffectToSelf(UseStamina);
+	FGameplayTag AttackTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Attack");
+	FGameplayTagContainer AttackTagContainer;
+	AttackTagContainer.AddTag(AttackTag);
+	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[2]);
+	//AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
+	//ApplyGameplayEffectToSelf(UseStamina);
 }
 
 void APlayerCharacter::Roll(const FInputActionValue& Value)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ROLL"));
+
+	FGameplayTag RollTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Roll");
+	FGameplayTagContainer RollTagContainer;
+	RollTagContainer.AddTag(RollTag); 
+	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[0]);
+	//AbilitySystemComponent->TryActivateAbilitiesByTag(RollTagContainer);
+	ApplyGameplayEffectToSelf(UseStamina);
 }
 
-void APlayerCharacter::Block(const FInputActionValue& Value)
+void APlayerCharacter::BlockComplete(const FInputActionValue& Value)
 {
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BLOCK"));
 	}
+	if (AbilitySystemComponent) {
+		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+		//EffectContext.AddSourceObject(this);
+
+		//FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectToApply, 1.0f, EffectContext);
+		//if (SpecHandle.IsValid())
+		//{
+		FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");
+		FGameplayTagContainer BlockTagContainer;
+		BlockTagContainer.AddTag(BlockTag);
+		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(BlockTagContainer);
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("END BLOCK ENDED Applied"));
+			}
+		//}
+	}
+}
+void APlayerCharacter::Block(const FInputActionValue& Value)
+{
+	if (GEngine)
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BLOCK"));
+	}
+
+	FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Block");
+	FGameplayTagContainer BlockTagContainer;
+	BlockTagContainer.AddTag(BlockTag);
+	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[1]);
+	//AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
 }
 
 void APlayerCharacter::PlayerJump(const FInputActionValue& Value)
@@ -276,6 +357,12 @@ void APlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("JUMP"));
 	}
+	FGameplayTag JumpTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Jump");
+	FGameplayTagContainer JumpTagContainer;
+	JumpTagContainer.AddTag(JumpTag);
+	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[3]);
+	//AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
+	ApplyGameplayEffectToSelf(UseStamina);
 }
 
 void APlayerCharacter::MoveForward(const FInputActionValue& Value)
