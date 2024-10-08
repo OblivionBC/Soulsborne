@@ -83,6 +83,11 @@ void ASoulCharacter::BeginPlay()
 	Super::BeginPlay();
 }
 
+void ASoulCharacter::Damaged()
+{
+	//Deliberate Empty Function for Override
+}
+
 /** Called every frame */
 void ASoulCharacter::Tick(float DeltaTime)
 {

@@ -8,6 +8,7 @@
 #include <GameplayEffectTypes.h>
 #include "AbilitySystemInterface.h"
 #include "SoulAttributeSet.h"
+#include "SoulCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
@@ -19,7 +20,7 @@
 
 
 
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDealDamage, AActor*, DamagedActor, float, Damage, AController*, InstigatedBy);
 UCLASS()
 class SOULSBORNE_API APlayerCharacter : public ACharacter, public IAbilitySystemInterface, public IProgressBarInterface
 {
@@ -57,7 +58,8 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
 	virtual void ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply);
 	UFUNCTION(BlueprintCallable)
-	 void HandleMeleeAttack();
+	void HandleMeleeAttack();
+	void ApplyDamage(ASoulCharacter* Target, float Damage);
 
 
 	/* Input Functions */
@@ -70,8 +72,11 @@ public:
 	virtual void Block(const FInputActionValue& Value);
 	virtual void BlockComplete(const FInputActionValue& Value);
 	virtual void PlayerJump(const FInputActionValue& Value);
+	virtual void LockCamera(const FInputActionValue& Value);
 
 	/**	----------------------------------- Properties ------------------------------------ **/
+	/* Delegates */
+	FOnDealDamage DamageDealt;
 	/*  Attributes */
 
 	UPROPERTY()
@@ -114,6 +119,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* SpringArm;
+
+	UPROPERTY()
+	AActor* CameraLockActor;
 
 	/* Equipment */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")

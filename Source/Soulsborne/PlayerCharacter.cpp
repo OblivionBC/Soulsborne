@@ -14,6 +14,10 @@
 #include "GameplayTagsModule.h"
 #include "GameplayAbilitySpec.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
+
+#include "DynamicTakeDamage.h"
+#include "DrawDebugHelpers.h"
 
 /*** ----------------------- Base Functions ---------------------- ***/
 
@@ -43,8 +47,8 @@ APlayerCharacter::APlayerCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 
 }
 
@@ -79,6 +83,15 @@ void APlayerCharacter::BeginPlay()
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (CameraLockActor) {
+
+		FVector StartLocation = this->GetActorLocation(); // Starting point
+		FVector TargetLocation = CameraLockActor->GetActorLocation(); // Target point
+
+		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+		LookAtRotation.Pitch += -20.0f;
+		this->GetController()->SetControlRotation(LookAtRotation);
+	}
 }
 
 /** Called when the character is possessed by a controller */
@@ -175,22 +188,72 @@ void APlayerCharacter::HandleMeleeAttack() {
 	if (PlayerMesh) {
 		FName rightSocketName = "righthandSocket";
 		FVector RightSocketLocation = PlayerMesh->GetSocketLocation(rightSocketName);
-		float SphereRadius = 200.0f;
-		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
-		TArray<AActor*> ActorsToIgnore;
-		ActorsToIgnore.Add(this);
-		TArray<AActor*> OverlappedActors;
-		UKismetSystemLibrary::SphereOverlapActors(
-			GetWorld(), RightSocketLocation, SphereRadius, ObjectTypes, nullptr, ActorsToIgnore, OverlappedActors
+		float SphereRadius = 70.0f;
+		FCollisionShape CollisionShape = FCollisionShape::MakeSphere(SphereRadius);
+		TArray<FOverlapResult> OverlapResults;
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+
+		bool bHasOverlapped = GetWorld()->OverlapMultiByChannel(
+			OverlapResults,
+			RightSocketLocation,
+			FQuat::Identity,
+			ECC_Pawn,
+			CollisionShape,
+			QueryParams
 		);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Handled"));
-		for (AActor* Actor : OverlappedActors) {
-			//AActor* Instigator = GetInstigator();
-			UE_LOG(LogTemp, Warning, TEXT("Overlapped Actor: %s"), *Actor->GetName());
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Overlap check called"));
+		}
+		DrawDebugSphere(GetWorld(), RightSocketLocation, SphereRadius, 12, FColor::Green, false, 5.0f);
+		if (bHasOverlapped)
+		{
+			for (const FOverlapResult& Result : OverlapResults)
+			{
+				ASoulCharacter* OverlappedActor = Cast<ASoulCharacter>(Result.GetActor());
+				if (OverlappedActor)
+				{
+					// Debug message to check each overlapped actor
+					if (GEngine)
+					{
+						GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Overlapped with: %s"), *OverlappedActor->GetName()));
+					}
+
+					//Deal Damage
+					ApplyDamage(OverlappedActor, 40.0f);
+					//DamageDealt.Broadcast(this, 20, this->GetController());
+
+				}
+
+			}
 		}
 	}
+
 }
+
+void APlayerCharacter::ApplyDamage(ASoulCharacter* Target, float Damage) {
+	Damage *= -1.0f;
+	//UE_LOG(LogTemp, Warning, TEXT("Target Health Before %f"), Target->GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
+
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(UDynamicTakeDamage::StaticClass(), 1.0f, AbilitySystemComponent->MakeEffectContext());
+	if (SpecHandle.IsValid() && Target->GetAbilitySystemComponent())
+	{
+		FGameplayEffectSpec* Spec = SpecHandle.Data.Get();
+
+		//Caller Magnitude is not working dynamically, hard coded in Effect
+		Spec->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")), Damage);
+		Target->GetAbilitySystemComponent()->ApplyGameplayEffectSpecToSelf(*Spec);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Applied Affect to with: %s"), *Target->GetName()));
+		}
+		Target->Damaged();
+		//UE_LOG(LogTemp, Warning, TEXT("Target Health After %f"), Target->GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
+	}
+}
+
 //Apply a gameplay effect to player
 void APlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply) {
 	if (AbilitySystemComponent && EffectToApply) {
@@ -231,25 +294,25 @@ void APlayerCharacter::GiveDefaultAbilities()
 
 //Used to attatch equipment to the socket name specified, currently static for development purposes
 void APlayerCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName) {
-		USkeletalMeshComponent* PlayerMesh = GetMesh();
-		if (PlayerMesh && LHandArmament && RHandArmament) {
-			FName rightSocketName = "righthandSocket";
-			FName leftSocketName = "lefthandSocket";
-			FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
-			FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
+	USkeletalMeshComponent* PlayerMesh = GetMesh();
+	if (PlayerMesh && LHandArmament && RHandArmament) {
+		FName rightSocketName = "righthandSocket";
+		FName leftSocketName = "lefthandSocket";
+		FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
+		FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
 
-			FActorSpawnParameters SpawnParams;
-			AActor* LeftActor = GetWorld()->SpawnActor<AActor>(LHandArmament, LeftSocketT, SpawnParams);
-			AActor* RightActor = GetWorld()->SpawnActor<AActor>(RHandArmament, RightSocketT, SpawnParams);
+		FActorSpawnParameters SpawnParams;
+		AActor* LeftActor = GetWorld()->SpawnActor<AActor>(LHandArmament, LeftSocketT, SpawnParams);
+		AActor* RightActor = GetWorld()->SpawnActor<AActor>(RHandArmament, RightSocketT, SpawnParams);
 
-			LeftActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
-			RightActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
-			}
-
+		LeftActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
+		RightActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
 		}
+
+	}
 
 
 }
@@ -268,6 +331,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	UInputAction* IA_LookRight = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_LookRight.IA_LookRight")));
 	UInputAction* IA_LookUp = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_LookUp.IA_LookUp")));
 	UInputAction* IA_Roll = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Roll.IA_Roll")));
+	UInputAction* IA_LockCamera = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_LockCamera.IA_LockCamera")));
 
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
@@ -282,59 +346,103 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this, &APlayerCharacter::LookRight);
 		EnhancedInputComponent->BindAction(IA_LookUp, ETriggerEvent::Triggered, this, &APlayerCharacter::LookUp);
 		EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &APlayerCharacter::Roll);
+		EnhancedInputComponent->BindAction(IA_LockCamera, ETriggerEvent::Started, this, &APlayerCharacter::LockCamera);
 
 	}
+}
+
+void APlayerCharacter::LockCamera(const FInputActionValue& Value) {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("LockScreen"));
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (CameraLockActor && PlayerController) {
+		CameraLockActor = nullptr;
+
+		//Pitch + 20.0f
+		return;
+	}
+	if (PlayerController) {
+		APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager;
+		if (CameraManager) {
+			USceneComponent* TransformComponent = CameraManager->GetTransformComponent();
+			FVector StartLocation = TransformComponent->GetComponentLocation();
+			StartLocation.Z += 50.0;
+			FVector ForwardVector = TransformComponent->GetForwardVector();
+			ForwardVector *= 1000.0f;
+			FVector EndLocation = ForwardVector + StartLocation;
+			float SphereRadius = 150.0f;
+
+			TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesArray;
+			ObjectTypesArray.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+			TArray<AActor*> IgnoreActors;
+			IgnoreActors.Add(this);
+			FHitResult OutHit;
+			bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+				GetWorld(),
+				StartLocation,
+				EndLocation,
+				SphereRadius,
+				ObjectTypesArray,
+				false,
+				IgnoreActors,
+				EDrawDebugTrace::ForDuration,
+				OutHit,
+				true
+			);
+			if (bHit && Cast<ACharacter>(OutHit.GetActor()))
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *OutHit.Actor->GetName());
+				CameraLockActor = OutHit.GetActor();
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("LOCKED"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("No Hit"));
+			}
+		}
+	}
+
 }
 
 void APlayerCharacter::Attack(const FInputActionValue& Value)
 {
-	if (GEngine)
-	{
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
+
+	double stam;
+	GetStamina_Implementation(stam);
+
+	if (stam > 15.0f) {
+		FGameplayTag AttackTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.Attack");
+		FGameplayTagContainer AttackTagContainer;
+		AttackTagContainer.AddTag(AttackTag);
+		AbilitySystemComponent->TryActivateAbilitiesByTag(AttackTagContainer);
 	}
-	ApplyGameplayEffectToSelf(UseStamina);
-	FGameplayTag AttackTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Attack");
-	FGameplayTagContainer AttackTagContainer;
-	AttackTagContainer.AddTag(AttackTag);
-	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[2]);
-	//AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
-	//ApplyGameplayEffectToSelf(UseStamina);
+
 }
 
 void APlayerCharacter::Roll(const FInputActionValue& Value)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ROLL"));
-
-	FGameplayTag RollTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Roll");
-	FGameplayTagContainer RollTagContainer;
-	RollTagContainer.AddTag(RollTag); 
-	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[0]);
-	//AbilitySystemComponent->TryActivateAbilitiesByTag(RollTagContainer);
-	ApplyGameplayEffectToSelf(UseStamina);
+	double stam;
+	GetStamina_Implementation(stam);
+	if (stam > 15.0f) {
+		FGameplayTag RollTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Roll");
+		FGameplayTagContainer RollTagContainer;
+		RollTagContainer.AddTag(RollTag);
+		AbilitySystemComponent->TryActivateAbilitiesByTag(RollTagContainer);
+	}
 }
 
 void APlayerCharacter::BlockComplete(const FInputActionValue& Value)
 {
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BLOCK"));
-	}
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BLOCK"));
 	if (AbilitySystemComponent) {
-		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-		//EffectContext.AddSourceObject(this);
-
-		//FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectToApply, 1.0f, EffectContext);
-		//if (SpecHandle.IsValid())
-		//{
 		FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");
 		FGameplayTagContainer BlockTagContainer;
 		BlockTagContainer.AddTag(BlockTag);
 		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(BlockTagContainer);
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("END BLOCK ENDED Applied"));
-			}
-		//}
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("END BLOCK ENDED Applied"));
+		}
 	}
 }
 void APlayerCharacter::Block(const FInputActionValue& Value)
@@ -344,25 +452,26 @@ void APlayerCharacter::Block(const FInputActionValue& Value)
 		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BLOCK"));
 	}
 
-	FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Block");
+	FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");
 	FGameplayTagContainer BlockTagContainer;
 	BlockTagContainer.AddTag(BlockTag);
-	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[1]);
-	//AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
+	AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
 }
 
 void APlayerCharacter::PlayerJump(const FInputActionValue& Value)
 {
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("JUMP"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("JUMP"));
+
+	double stam;
+	GetStamina_Implementation(stam);
+
+	if (stam > 15.0f) {
+		FGameplayTag JumpTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Jump");
+		FGameplayTagContainer JumpTagContainer;
+		JumpTagContainer.AddTag(JumpTag);
+		AbilitySystemComponent->TryActivateAbilitiesByTag(JumpTagContainer);
+		//ApplyGameplayEffectToSelf(UseStamina);
 	}
-	FGameplayTag JumpTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Jump");
-	FGameplayTagContainer JumpTagContainer;
-	JumpTagContainer.AddTag(JumpTag);
-	AbilitySystemComponent->TryActivateAbilityByClass(DefaultAbilities[3]);
-	//AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
-	ApplyGameplayEffectToSelf(UseStamina);
 }
 
 void APlayerCharacter::MoveForward(const FInputActionValue& Value)

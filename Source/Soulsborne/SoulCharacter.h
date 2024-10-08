@@ -49,7 +49,7 @@ public:
 
 
 	virtual void BeginPlay() override;
-
+	virtual void Damaged();
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
