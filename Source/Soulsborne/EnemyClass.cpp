@@ -30,14 +30,6 @@ void AEnemyClass::printAttributes()
 void AEnemyClass::BeginPlay()
 {
 	Super::BeginPlay();
-	printAttributes();
-	PlayerCharacter = Cast<APlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-	if (PlayerCharacter) {
-		PlayerCharacter->DamageDealt.AddDynamic(this, &AEnemyClass::Grow);
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("Player Is NUll %d"), MaxStat);
-	}
 
 }
 void AEnemyClass::Damaged() {

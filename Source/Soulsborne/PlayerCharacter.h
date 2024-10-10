@@ -6,40 +6,57 @@
 #include "GameFramework/Character.h"
 #include "GameplayTagContainer.h"
 #include <GameplayEffectTypes.h>
-#include "AbilitySystemInterface.h"
-#include "SoulAttributeSet.h"
-#include "SoulCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+
+#include "AbilitySystemInterface.h"
+#include "PlayerCombatComponent.h"
 #include "ProgressBarInterface.h"
+#include "PlayerCombatInterface.h"
+#include "SoulAttributeSet.h"
+#include "SoulCharacter.h"
+
 #include "PlayerCharacter.generated.h"
 
 
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDealDamage, AActor*, DamagedActor, float, Damage, AController*, InstigatedBy);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDealDamage, AActor*, DamagedActor, float, Damage, AController*, InstigatedBy);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMontageNotifyDelegate, FName, NotifyName, const FBranchingPointNotifyPayload&, BranchingPointPayload);
 UCLASS()
-class SOULSBORNE_API APlayerCharacter : public ACharacter, public IAbilitySystemInterface, public IProgressBarInterface
+class SOULSBORNE_API APlayerCharacter : public ACharacter, public IAbilitySystemInterface, public IProgressBarInterface, public IPlayerCombatInterface
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
 	APlayerCharacter();
-
+	UFUNCTION()
+	void OnMontageNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
+	UFUNCTION()
+	void AttackComboNoDelegates(const FInputActionValue& Value);
+	UPROPERTY()
+	bool isComboActive;
+	UFUNCTION()
+	void OnComboMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	UAnimMontage* MontageToPlay;
 	/**	----------------------------------- Functions ------------------------------------ **/
 	/* Attribute Functions   */
 	virtual void InitializeAttributes();
 
+	/* Progress Bar Interface Functions */
 	virtual void GetHealth_Implementation(double& Result) const override;
 	virtual void GetHealthAsRatio_Implementation(double& Result) const override;
 	virtual void GetStamina_Implementation(double& Result) const override;
 	virtual void GetMana_Implementation(double& Result) const override;
 	virtual void GetManaAsRatio_Implementation(double& Result) const override;
 	virtual void GetStaminaAsRatio_Implementation(double& Result) const override;
+
+	/* Player Combat Interface Functions*/
+	virtual void StartDamageTrace_Implementation() const override;
+	virtual void EndDamageTrace_Implementation() const override;
 
 	/* MISC */
 	void AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName);
@@ -73,12 +90,13 @@ public:
 	virtual void BlockComplete(const FInputActionValue& Value);
 	virtual void PlayerJump(const FInputActionValue& Value);
 	virtual void LockCamera(const FInputActionValue& Value);
+	virtual void AttackCombo(const FInputActionValue& Value);
 
 	/**	----------------------------------- Properties ------------------------------------ **/
-	/* Delegates */
-	FOnDealDamage DamageDealt;
-	/*  Attributes */
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	class UPlayerCombatComponent* PlayerCombatComponent;
+	/*  Attributes */
 	UPROPERTY()
 	class USoulAttributeSet* Attributes;
 
@@ -104,6 +122,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")
 	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")
+	bool isAttacking;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayEffect> StartingStatEffect;
 
@@ -123,12 +144,24 @@ public:
 	UPROPERTY()
 	AActor* CameraLockActor;
 
+	UPROPERTY()
+	AActor* TargetLockIcon;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
+	UClass* TargetLockIconClass;
+
 	/* Equipment */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
-	TSubclassOf<AActor> LHandArmament;
+	TSubclassOf<AActor> LHandArmamentClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
-	TSubclassOf<AActor> RHandArmament;
+	TSubclassOf<AActor> RHandArmamentClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
+	AActor* RHandArmament;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
+	AActor* LHandArmament;
 
 	/* UI */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
@@ -140,5 +173,8 @@ public:
 	/* Input */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* MyInputMappingContext;
+
+	UPROPERTY(BlueprintAssignable, Category = "Animation")
+	FMontageNotifyDelegate OnMontageNotify;
 
 };

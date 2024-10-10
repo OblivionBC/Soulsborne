@@ -1,23 +1,31 @@
 
 
-#include "PlayerCharacter.h"							
-#include "AbilitySystemComponent.h"						 
-#include "SoulAttributeSet.h"						     
-#include "Engine/Engine.h"
-#include "Engine/GameViewportClient.h"
-#include "Blueprint/UserWidget.h"
-#include "GameFramework/Actor.h"
-#include "Engine/World.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "PlayerCharacter.h"	
+#include "SoulAttributeSet.h"	
+#include "CharacterAttackCombo.h"
+#include "DynamicTakeDamage.h"
+#include "PlayerCombatInterface.h"
+#include "PlayerEquipment.h"
 #include "ProgressBarInterface.h"
+
+#include "AbilitySystemComponent.h"	
+#include "DrawDebugHelpers.h"
+#include "Blueprint/UserWidget.h"
 #include "GameplayTagsModule.h"
 #include "GameplayAbilitySpec.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/ArrowComponent.h"
 
-#include "DynamicTakeDamage.h"
-#include "DrawDebugHelpers.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
+#include "Engine/World.h"
+
+#include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 /*** ----------------------- Base Functions ---------------------- ***/
 
@@ -50,6 +58,11 @@ APlayerCharacter::APlayerCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Gorka/Combat/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
+	if (Montage.Succeeded())
+	{
+		MontageToPlay = Montage.Object;
+	}
 }
 
 /** Called when the game starts or when spawned */
@@ -69,16 +82,30 @@ void APlayerCharacter::BeginPlay()
 		}
 		//Static call for now
 		FName rightSocketName = "righthandSocket";
-		AttatchEquipment(LHandArmament, rightSocketName);
+		AttatchEquipment(LHandArmamentClass, rightSocketName);
 
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(MyInputMappingContext, 1);
 		}
 
+		this->GetMesh()->GetAnimInstance()->OnPlayMontageNotifyEnd.AddDynamic(this, &APlayerCharacter::OnMontageNotifyStart);
 	}
 }
-
+void APlayerCharacter::OnMontageNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload) {
+	UE_LOG(LogTemp, Log, TEXT("isAttacking : %s"), (isAttacking ? TEXT("true") : TEXT("false")));
+	UE_LOG(LogTemp, Log, TEXT("isComboActive : %s"), (isComboActive ? TEXT("true") : TEXT("false")));
+	OnMontageNotify.Broadcast(NotifyName, BranchingPointNotifyPayload);
+	if (MontageToPlay && !isAttacking)
+	{
+		GetMesh()->GetAnimInstance()->Montage_Stop(0.2f, MontageToPlay);
+		isComboActive = false;
+		isAttacking = false;
+		return;
+	}
+	isAttacking = false;
+	HandleMeleeAttack();
+}
 /** Called every frame */
 void APlayerCharacter::Tick(float DeltaTime)
 {
@@ -181,52 +208,86 @@ void APlayerCharacter::GetHealthAsRatio_Implementation(double& Result) const {
 	}
 }
 
+/** Combat Interface Implementations **/
+void APlayerCharacter::StartDamageTrace_Implementation() const
+{
+	if (PlayerCombatComponent)
+	{
+		PlayerCombatComponent->BeginDamageTrace();
+	}
+}
+
+void APlayerCharacter::EndDamageTrace_Implementation() const
+{
+	if (PlayerCombatComponent)
+	{
+		PlayerCombatComponent->EndDamageTrace();
+	}
+}
 /*** --------------------------------- Abilities ------------------------------- ***/
 
 void APlayerCharacter::HandleMeleeAttack() {
 	USkeletalMeshComponent* PlayerMesh = GetMesh();
-	if (PlayerMesh) {
+	if (PlayerMesh && RHandArmament) {
 		FName rightSocketName = "righthandSocket";
 		FVector RightSocketLocation = PlayerMesh->GetSocketLocation(rightSocketName);
-		float SphereRadius = 70.0f;
-		FCollisionShape CollisionShape = FCollisionShape::MakeSphere(SphereRadius);
-		TArray<FOverlapResult> OverlapResults;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this);
+		TArray<FHitResult> HitResults;
+		FCollisionObjectQueryParams NewQueryParams;
+		NewQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
-		bool bHasOverlapped = GetWorld()->OverlapMultiByChannel(
-			OverlapResults,
-			RightSocketLocation,
-			FQuat::Identity,
-			ECC_Pawn,
-			CollisionShape,
-			QueryParams
-		);
-
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Overlap check called"));
+		APlayerEquipment* Weapon = Cast<APlayerEquipment>(RHandArmament);
+		if (!Weapon) {
+			return;
 		}
-		DrawDebugSphere(GetWorld(), RightSocketLocation, SphereRadius, 12, FColor::Green, false, 5.0f);
-		if (bHasOverlapped)
-		{
-			for (const FOverlapResult& Result : OverlapResults)
+		FVector StartLocation = Weapon->GetStartAttackTrace()->GetComponentLocation();
+		FVector EndLocation = Weapon->GetEndAttackTrace()->GetComponentLocation();
+		EndLocation.X += 100.0f;
+		FCollisionQueryParams CollisionParams;
+		CollisionParams.AddIgnoredActor(this);
+
+		//ArrowComponent* StartAttackTrace = Cast<UArrowComponent>(RightHandArmament->GetComponentByName(UArrowComponent::StaticClass(), TEXT("StartAttackTrace")));
+		//ArrowComponent* EndAttackTrace = Cast<UArrowComponent>(RightHandArmament->GetComponentByName(UArrowComponent::StaticClass(), TEXT("EndAttackTrace")));
+
+		if (1 == 1) {
+			bool bHasOverlapped = GetWorld()->LineTraceMultiByObjectType(
+				HitResults,
+				StartLocation,
+				EndLocation,
+				NewQueryParams,
+				CollisionParams);
+
+			if (GEngine)
 			{
-				ASoulCharacter* OverlappedActor = Cast<ASoulCharacter>(Result.GetActor());
-				if (OverlappedActor)
+				GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Overlap check called"));
+			}
+			//DrawDebugSphere(GetWorld(), RightSocketLocation, SphereRadius, 12, FColor::Green, false, 5.0f);
+			DrawDebugLine(
+				GetWorld(),
+				StartLocation,
+				EndLocation,
+				FColor::Green,
+				false, 1, 0, 1
+			);
+			if (bHasOverlapped)
+			{
+				for (const FHitResult& Result : HitResults)
 				{
-					// Debug message to check each overlapped actor
-					if (GEngine)
+					ASoulCharacter* OverlappedActor = Cast<ASoulCharacter>(Result.GetActor());
+					if (OverlappedActor)
 					{
-						GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Overlapped with: %s"), *OverlappedActor->GetName()));
+						// Debug message to check each overlapped actor
+						if (GEngine)
+						{
+							GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Overlapped with: %s"), *OverlappedActor->GetName()));
+						}
+
+						//Deal Damage
+						ApplyDamage(OverlappedActor, 40.0f);
+						//DamageDealt.Broadcast(this, 20, this->GetController());
+
 					}
 
-					//Deal Damage
-					ApplyDamage(OverlappedActor, 40.0f);
-					//DamageDealt.Broadcast(this, 20, this->GetController());
-
 				}
-
 			}
 		}
 	}
@@ -289,24 +350,25 @@ void APlayerCharacter::GiveDefaultAbilities()
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility, 1, 0));
 		}
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UCharacterAttackCombo::StaticClass(), 1, 0));
 	}
 }
 
 //Used to attatch equipment to the socket name specified, currently static for development purposes
 void APlayerCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName) {
 	USkeletalMeshComponent* PlayerMesh = GetMesh();
-	if (PlayerMesh && LHandArmament && RHandArmament) {
+	if (PlayerMesh && LHandArmamentClass && RHandArmamentClass) {
 		FName rightSocketName = "righthandSocket";
 		FName leftSocketName = "lefthandSocket";
 		FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
 		FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
-
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("ATTACHING")));
 		FActorSpawnParameters SpawnParams;
-		AActor* LeftActor = GetWorld()->SpawnActor<AActor>(LHandArmament, LeftSocketT, SpawnParams);
-		AActor* RightActor = GetWorld()->SpawnActor<AActor>(RHandArmament, RightSocketT, SpawnParams);
+		LHandArmament = GetWorld()->SpawnActor<AActor>(LHandArmamentClass, LeftSocketT, SpawnParams);
+		RHandArmament = GetWorld()->SpawnActor<AActor>(RHandArmamentClass, RightSocketT, SpawnParams);
 
-		LeftActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
-		RightActor->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
+		LHandArmament->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
+		RHandArmament->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
@@ -336,28 +398,41 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		//Basic Move and Look
 		EnhancedInputComponent->BindAction(IA_MoveRight, ETriggerEvent::Triggered, this, &APlayerCharacter::MoveRight);
 		EnhancedInputComponent->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this, &APlayerCharacter::MoveForward);
-		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
+		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this, &APlayerCharacter::LookRight);
+		EnhancedInputComponent->BindAction(IA_LookUp, ETriggerEvent::Triggered, this, &APlayerCharacter::LookUp);
+
+		//Ability Movement
+		EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerJump);
+		EnhancedInputComponent->BindAction(IA_LockCamera, ETriggerEvent::Started, this, &APlayerCharacter::LockCamera);
+		//Combat
+		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackComboNoDelegates);
+
+		//EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackCombo);
+		//EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
+
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Triggered, this, &APlayerCharacter::Block);
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Ongoing, this, &APlayerCharacter::Block);
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Completed, this, &APlayerCharacter::BlockComplete);
-		EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerJump);
-		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this, &APlayerCharacter::LookRight);
-		EnhancedInputComponent->BindAction(IA_LookUp, ETriggerEvent::Triggered, this, &APlayerCharacter::LookUp);
+
 		EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &APlayerCharacter::Roll);
-		EnhancedInputComponent->BindAction(IA_LockCamera, ETriggerEvent::Started, this, &APlayerCharacter::LockCamera);
 
 	}
 }
 
 void APlayerCharacter::LockCamera(const FInputActionValue& Value) {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("LockScreen"));
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	UCharacterMovementComponent* MovementComponent = this->GetCharacterMovement();
 	if (CameraLockActor && PlayerController) {
 		CameraLockActor = nullptr;
+		MovementComponent->bOrientRotationToMovement = true;
+		MovementComponent->bUseControllerDesiredRotation = false;
+		if (TargetLockIcon) {
+			TargetLockIcon->Destroy();
+		}
 
-		//Pitch + 20.0f
 		return;
 	}
 	if (PlayerController) {
@@ -392,7 +467,21 @@ void APlayerCharacter::LockCamera(const FInputActionValue& Value) {
 			{
 				//UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *OutHit.Actor->GetName());
 				CameraLockActor = OutHit.GetActor();
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("LOCKED"));
+				MovementComponent->bOrientRotationToMovement = false;
+				MovementComponent->bUseControllerDesiredRotation = true;
+				if (TargetLockIconClass)
+				{
+					FVector SpawnLocation = FVector(0.0f, 0.0f, 20.0f); // Example location
+					FRotator SpawnRotation = FRotator::ZeroRotator; // Example rotation
+					FActorSpawnParameters SpawnParams;
+					TargetLockIcon = GetWorld()->SpawnActor<AActor>(TargetLockIconClass, SpawnLocation, SpawnRotation, SpawnParams);
+					if (TargetLockIcon)
+					{
+						GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Spawned"));
+						FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepRelative, false);
+						TargetLockIcon->AttachToActor(CameraLockActor, AttachmentRules);
+					}
+				}
 			}
 			else
 			{
@@ -417,6 +506,60 @@ void APlayerCharacter::Attack(const FInputActionValue& Value)
 		AbilitySystemComponent->TryActivateAbilitiesByTag(AttackTagContainer);
 	}
 
+}
+
+void APlayerCharacter::AttackCombo(const FInputActionValue& Value)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
+	isAttacking = true;
+	double stam;
+	GetStamina_Implementation(stam);
+	FName ComboTag = "Character.AttackCombo";
+	if (stam > 15.0f && AbilitySystemComponent->ComponentHasTag(ComboTag)) {
+		isAttacking = true;
+		//Combo is on still, on the Input, check if the player is still comboing
+
+		//FGameplayTag AttackComboTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.AttackCombo");
+		//FGameplayTagContainer AttackComboTagContainer;
+		//AttackComboTagContainer.AddTag(AttackComboTag);
+		//UE_LOG(LogTemp, Warning, TEXT("Activate %s"), (AbilitySystemComponent->TryActivateAbilitiesByTag(AttackComboTagContainer) ? TEXT("true") : TEXT("false")));
+		//AbilitySystemComponent->TryActivateAbilitiesByTag(AttackComboTagContainer);
+	}
+	else if (stam > 15.0f) {
+		AbilitySystemComponent->TryActivateAbilityByClass(UCharacterAttackCombo::StaticClass());
+		//AbilitySystemComponent->TryActivateAbilitiesByTag(AttackComboTagContainer);
+	}
+
+}
+void APlayerCharacter::AttackComboNoDelegates(const FInputActionValue& Value)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
+	double stam;
+	GetStamina_Implementation(stam);
+	FName ComboTag = "Character.AttackCombo";
+	//if (stam > 15.0f && AbilitySystemComponent->ComponentHasTag(ComboTag)) {
+	if (stam > 15.0f && isComboActive && !isAttacking) {
+		isAttacking = true;
+
+	}
+	else if (stam > 15.0f && !isComboActive) {
+		//AbilitySystemComponent->TryActivateAbilityByClass(UCharacterAttackCombo::StaticClass());
+		//AbilitySystemComponent->TryActivateAbilitiesByTag(AttackComboTagContainer);
+		if (MontageToPlay)
+		{
+			GetMesh()->GetAnimInstance()->Montage_Play(MontageToPlay);
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &APlayerCharacter::OnComboMontageEnded);
+			GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
+			isAttacking = true;
+			isComboActive = true;
+		}
+	}
+
+}
+void APlayerCharacter::OnComboMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
+	isComboActive = false;
+	isAttacking = false;
 }
 
 void APlayerCharacter::Roll(const FInputActionValue& Value)
