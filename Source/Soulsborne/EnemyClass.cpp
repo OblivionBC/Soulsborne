@@ -13,7 +13,6 @@
 AEnemyClass::AEnemyClass()
 {
 	// Initialize the ability system component
-	GetAbilitySystemComponent();
 	printAttributes();
 	PlayerCharacter = Cast<APlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 }
@@ -73,4 +72,53 @@ void AEnemyClass::Grow(AActor* DamagedActor, float Damage, AController* Instigat
 {
 	SetActorScale3D(GetActorScale3D() + 0.1f);
 	Damaged();
+}
+
+void AEnemyClass::GetStamina_Implementation(double& Result) const {
+	if (GetAbilitySystemComponent()) {
+		Result = GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetStaminaAttribute());
+	}
+	else {
+		Result = 0.0f;
+	}
+}
+void AEnemyClass::GetMana_Implementation(double& Result) const {
+	if (GetAbilitySystemComponent()) {
+		Result = GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetManaAttribute());
+	}
+	else {
+		Result = 0.0f;
+	}
+}
+void AEnemyClass::GetHealth_Implementation(double& Result) const {
+	if (GetAbilitySystemComponent()) {
+		Result = GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
+	}
+	else {
+		Result = 0.0f;
+	}
+}
+void AEnemyClass::GetStaminaAsRatio_Implementation(double& Result) const {
+	if (GetAbilitySystemComponent()) {
+		Result = GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetStaminaAttribute()) / MaxStamina;
+	}
+	else {
+		Result = 0.0f;
+	}
+}
+void AEnemyClass::GetManaAsRatio_Implementation(double& Result) const {
+	if (GetAbilitySystemComponent()) {
+		Result = GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetManaAttribute()) / MaxMana;
+	}
+	else {
+		Result = 0.0f;
+	}
+}
+void AEnemyClass::GetHealthAsRatio_Implementation(double& Result) const {
+	if (GetAbilitySystemComponent()) {
+		Result = GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) / MaxHealth;
+	}
+	else {
+		Result = 0.0f;
+	}
 }

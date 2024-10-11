@@ -5,13 +5,15 @@
 #include "CoreMinimal.h"
 #include "SoulCharacter.h"
 #include "PlayerCharacter.h"
+#include "ProgressBarInterface.h"
+#include "AbilitySystemInterface.h"
 #include "EnemyClass.generated.h"
 
 /**
  *
  */
 UCLASS()
-class SOULSBORNE_API AEnemyClass : public ASoulCharacter
+class SOULSBORNE_API AEnemyClass : public ASoulCharacter, public IProgressBarInterface
 {
 	GENERATED_BODY()
 	//Ability System Component 
@@ -28,6 +30,12 @@ public:
 	void printAttributes();
 	virtual void BeginPlay() override;
 
+	virtual void GetHealth_Implementation(double& Result) const override;
+	virtual void GetHealthAsRatio_Implementation(double& Result) const override;
+	virtual void GetStamina_Implementation(double& Result) const override;
+	virtual void GetMana_Implementation(double& Result) const override;
+	virtual void GetManaAsRatio_Implementation(double& Result) const override;
+	virtual void GetStaminaAsRatio_Implementation(double& Result) const override;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

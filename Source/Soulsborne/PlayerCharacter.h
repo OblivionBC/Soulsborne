@@ -74,9 +74,6 @@ public:
 	virtual void GiveDefaultAbilities();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
 	virtual void ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply);
-	UFUNCTION(BlueprintCallable)
-	void HandleMeleeAttack();
-	void ApplyDamage(ASoulCharacter* Target, float Damage);
 
 
 	/* Input Functions */
@@ -140,15 +137,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* SpringArm;
-
-	UPROPERTY()
-	AActor* CameraLockActor;
-
-	UPROPERTY()
-	AActor* TargetLockIcon;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
-	UClass* TargetLockIconClass;
 
 	/* Equipment */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")

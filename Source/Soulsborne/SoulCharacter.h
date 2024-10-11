@@ -30,7 +30,6 @@ public:
 
 	//Override this to initialize the ability system component
 	UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-
 	//Base Turn Rate, in deg/sec. Other scaling may affect final turn rate.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	float BaseTurnRate;

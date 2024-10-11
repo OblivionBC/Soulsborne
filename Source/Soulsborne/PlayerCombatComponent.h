@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "PlayerEquipment.h"
 #include "PlayerCombatComponent.generated.h"
 
 
@@ -26,7 +27,25 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	FTimerHandle TimerHandle;
 	void DamageTrace();
-	void BeginDamageTrace();
+	void BeginDamageTrace(AActor* RHandArmament);
 	void EndDamageTrace();
+	void ApplyDamage(AActor* Target, float Damage);
+	void TargetLockCamera();
+	UPROPERTY()
+	APlayerEquipment* Weapon;
+
+	UPROPERTY()
+	ACharacter* Owner;
+
+	UPROPERTY()
+	AActor* CameraLockActor;
+
+	UPROPERTY()
+	AActor* TargetLockIcon;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
+	UClass* TargetLockIconClass;
+
+	FTimerHandle TraceTimerHandle;
 
 };
