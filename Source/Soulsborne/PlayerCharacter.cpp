@@ -231,7 +231,7 @@ void APlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Ef
 			FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			if (GEngine)
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Effect Applied"));
+				//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Effect Applied"));
 			}
 		}
 	}
@@ -266,7 +266,7 @@ void APlayerCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName soc
 		FName leftSocketName = "lefthandSocket";
 		FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
 		FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("ATTACHING")));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("ATTACHING")));
 		FActorSpawnParameters SpawnParams;
 		LHandArmament = GetWorld()->SpawnActor<AActor>(LHandArmamentClass, LeftSocketT, SpawnParams);
 		RHandArmament = GetWorld()->SpawnActor<AActor>(RHandArmamentClass, RightSocketT, SpawnParams);
@@ -275,7 +275,7 @@ void APlayerCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName soc
 		RHandArmament->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
 		if (GEngine)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
+			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
 		}
 
 	}
@@ -416,7 +416,7 @@ void APlayerCharacter::BlockComplete(const FInputActionValue& Value)
 		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(BlockTagContainer);
 		if (GEngine)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("END BLOCK ENDED Applied"));
+			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("END BLOCK ENDED Applied"));
 		}
 	}
 }

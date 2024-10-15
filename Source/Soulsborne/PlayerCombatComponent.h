@@ -1,4 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+/* PlayerCombatComponent
+Combat Component for Players and Player Characters (May be extended to enemys)
+Handles Combat Mechanics such as Locking Cameras, Attacks, and Damage Application
+Child of Actor Component Class
+*/
 
 #pragma once
 
@@ -25,11 +29,16 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	FTimerHandle TimerHandle;
+	
+	//Creates Line trace between the two arrows of a PlayerEquipment object and traces for Actors with Ability System Component
 	void DamageTrace();
+	//Called by the PlayerCharacter when starting a Trace Period of an attack animation
 	void BeginDamageTrace(AActor* RHandArmament);
+	//Called by the PlayerCharacter when ending a Trace Period of an attack animation
 	void EndDamageTrace();
+	//Applies damage via Gameplay Effect
 	void ApplyDamage(AActor* Target, float Damage);
+	//Traces for actor, and adds them to the TargetLockActor property, which is checked in the Tick function to lock the players camera
 	void TargetLockCamera();
 	UPROPERTY()
 	APlayerEquipment* Weapon;
@@ -46,6 +55,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
 	UClass* TargetLockIconClass;
 
+	FCollisionQueryParams DamageTraceCollisionParams;
 	FTimerHandle TraceTimerHandle;
 
 };
