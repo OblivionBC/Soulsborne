@@ -35,8 +35,6 @@ public:
 	APlayerCharacter();
 	UFUNCTION()
 	void OnMontageNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
-	UFUNCTION()
-	void AttackComboNoDelegates(const FInputActionValue& Value);
 	UPROPERTY()
 	bool isComboActive;
 	UFUNCTION()
@@ -77,17 +75,19 @@ public:
 
 
 	/* Input Functions */
-	virtual void MoveForward(const FInputActionValue& Value);
-	virtual void MoveRight(const FInputActionValue& Value);
+	virtual void MoveForward(const FInputActionValue& Value, UInputAction* Action);
+	virtual void MoveRight(const FInputActionValue& Value, UInputAction* Action);
 	virtual void LookRight(const FInputActionValue& Value);
 	virtual void LookUp(const FInputActionValue& Value);
-	virtual void Attack(const FInputActionValue& Value);
 	virtual void Roll(const FInputActionValue& Value);
 	virtual void Block(const FInputActionValue& Value);
 	virtual void BlockComplete(const FInputActionValue& Value);
 	virtual void PlayerJump(const FInputActionValue& Value);
 	virtual void LockCamera(const FInputActionValue& Value);
-	virtual void AttackCombo(const FInputActionValue& Value);
+	virtual void AttackComboAbility(const FInputActionValue& Value);
+	virtual void AttackComboClass(const FInputActionValue& Value);
+
+	const FKey GetMovementDirection(UInputAction* Action);
 
 	/**	----------------------------------- Properties ------------------------------------ **/
 
@@ -161,6 +161,9 @@ public:
 	/* Input */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* MyInputMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	FKey DirectionKey;
 
 	UPROPERTY(BlueprintAssignable, Category = "Animation")
 	FMontageNotifyDelegate OnMontageNotify;

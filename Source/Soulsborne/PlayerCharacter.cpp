@@ -7,6 +7,7 @@
 #include "PlayerCombatInterface.h"
 #include "PlayerEquipment.h"
 #include "ProgressBarInterface.h"
+#include "CharacterDodge.h"
 
 #include "AbilitySystemComponent.h"	
 #include "DrawDebugHelpers.h"
@@ -62,7 +63,7 @@ APlayerCharacter::APlayerCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Gorka/Combat/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Attacks/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
 	if (Montage.Succeeded())
 	{
 		MontageToPlay = Montage.Object;
@@ -191,6 +192,7 @@ void APlayerCharacter::GetManaAsRatio_Implementation(double& Result) const {
 		Result = 0.0f;
 	}
 }
+
 void APlayerCharacter::GetHealthAsRatio_Implementation(double& Result) const {
 	if (AbilitySystemComponent) {
 		Result = AbilitySystemComponent->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) / MaxHealth;
@@ -229,10 +231,6 @@ void APlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Ef
 		if (SpecHandle.IsValid())
 		{
 			FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-			if (GEngine)
-			{
-				//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Effect Applied"));
-			}
 		}
 	}
 }
@@ -254,7 +252,9 @@ void APlayerCharacter::GiveDefaultAbilities()
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility, 1, 0));
 		}
+		//C++ Implemented Abilities
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UCharacterAttackCombo::StaticClass(), 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UCharacterDodge::StaticClass(), 1, 0));
 	}
 }
 
@@ -273,10 +273,6 @@ void APlayerCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName soc
 
 		LHandArmament->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
 		RHandArmament->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
-		if (GEngine)
-		{
-			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("APPLIED"));
-		}
 
 	}
 
@@ -303,19 +299,18 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		//Basic Move and Look
-		EnhancedInputComponent->BindAction(IA_MoveRight, ETriggerEvent::Triggered, this, &APlayerCharacter::MoveRight);
-		EnhancedInputComponent->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this, &APlayerCharacter::MoveForward);
+		EnhancedInputComponent->BindAction(IA_MoveRight, ETriggerEvent::Triggered, this, &APlayerCharacter::MoveRight, IA_MoveRight);
+		EnhancedInputComponent->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this, &APlayerCharacter::MoveForward, IA_MoveForward);
+
 		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this, &APlayerCharacter::LookRight);
 		EnhancedInputComponent->BindAction(IA_LookUp, ETriggerEvent::Triggered, this, &APlayerCharacter::LookUp);
-
+		//>BindAction(Stalker_Character_Actions.Action_Move_Walk, ETriggerEvent::Completed, this, &AStalker_Character::On_Action_Move_Mode, ENPC_Movement_Mode::Walk, false);
 		//Ability Movement
 		EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerJump);
 		EnhancedInputComponent->BindAction(IA_LockCamera, ETriggerEvent::Started, this, &APlayerCharacter::LockCamera);
 		//Combat
-		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackComboNoDelegates);
-
-		//EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackCombo);
-		//EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
+		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackComboClass);
+		//Ability Implementation : EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackComboAbility);
 
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Triggered, this, &APlayerCharacter::Block);
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Ongoing, this, &APlayerCharacter::Block);
@@ -333,50 +328,34 @@ void APlayerCharacter::LockCamera(const FInputActionValue& Value) {
 	}
 }
 
-void APlayerCharacter::Attack(const FInputActionValue& Value)
+//Ability Implementation of AttackCombo, deprecated but may research soon
+void APlayerCharacter::AttackComboAbility(const FInputActionValue& Value)
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
-
-	double stam;
-	GetStamina_Implementation(stam);
-
-	if (stam > 15.0f) {
-		FGameplayTag AttackTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.Attack");
-		FGameplayTagContainer AttackTagContainer;
-		AttackTagContainer.AddTag(AttackTag);
-		AbilitySystemComponent->TryActivateAbilitiesByTag(AttackTagContainer);
-	}
-
-}
-
-void APlayerCharacter::AttackCombo(const FInputActionValue& Value)
-{
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
-	isAttacking = true;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
 	double stam;
 	GetStamina_Implementation(stam);
 	FName ComboTag = "Character.AttackCombo";
-	if (stam > 15.0f && AbilitySystemComponent->ComponentHasTag(ComboTag)) {
+	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo"));
+
+	if (stam > 15.0f && !AbilitySystemComponent->HasMatchingGameplayTag(Tag)) {
+		AbilitySystemComponent->TryActivateAbilityByClass(UCharacterAttackCombo::StaticClass());
 		isAttacking = true;
 	}
-	else if (stam > 15.0f) {
-		AbilitySystemComponent->TryActivateAbilityByClass(UCharacterAttackCombo::StaticClass());
-	}
 
 }
-void APlayerCharacter::AttackComboNoDelegates(const FInputActionValue& Value)
+
+//In Class implementation of Attack Combo
+void APlayerCharacter::AttackComboClass(const FInputActionValue& Value)
 {
 	double stam;
 	GetStamina_Implementation(stam);
-	FName ComboTag = "Character.AttackCombo";
-	//if (stam > 15.0f && AbilitySystemComponent->ComponentHasTag(ComboTag)) {
+
 	if (stam > 15.0f && isComboActive && !isAttacking) {
 		isAttacking = true;
 
 	}
 	else if (stam > 15.0f && !isComboActive) {
-		//AbilitySystemComponent->TryActivateAbilityByClass(UCharacterAttackCombo::StaticClass());
-		//AbilitySystemComponent->TryActivateAbilitiesByTag(AttackComboTagContainer);
+
 		if (MontageToPlay)
 		{
 			GetMesh()->GetAnimInstance()->Montage_Play(MontageToPlay);
@@ -385,47 +364,72 @@ void APlayerCharacter::AttackComboNoDelegates(const FInputActionValue& Value)
 			GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
 			isAttacking = true;
 			isComboActive = true;
+
+			FGameplayTagContainer ActivationOwnedTags;
+			ActivationOwnedTags.AddTag((FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo"))));
+			AbilitySystemComponent->AddLooseGameplayTags(ActivationOwnedTags);
 		}
 	}
-
 }
+
+//Returns the key if the specified input action's key is being pressed
+const FKey APlayerCharacter::GetMovementDirection(UInputAction* Action)
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			UEnhancedInputLocalPlayerSubsystem* EnhancedInputSubsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+			if (EnhancedInputSubsystem)
+			{
+				TArray<FKey> KeysDown = EnhancedInputSubsystem->QueryKeysMappedToAction(Action);
+				for (const FKey Key : KeysDown) {
+					if (PC->IsInputKeyDown(Key)) {
+						return Key;
+					}
+				}
+			}
+		}
+	}
+	FKey KeyDown;
+	return KeyDown;
+}
+//Delegate implementation for the combo attack montage
 void APlayerCharacter::OnComboMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
 	isComboActive = false;
 	isAttacking = false;
+	FGameplayTagContainer ActivationOwnedTags;
+	ActivationOwnedTags.AddTag((FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo"))));
+	AbilitySystemComponent->RemoveLooseGameplayTags(ActivationOwnedTags);
 }
 
+//Being migrated to C++ Ability Currently
 void APlayerCharacter::Roll(const FInputActionValue& Value)
 {
 	double stam;
 	GetStamina_Implementation(stam);
-	if (stam > 15.0f) {
-		FGameplayTag RollTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Roll");
-		FGameplayTagContainer RollTagContainer;
-		RollTagContainer.AddTag(RollTag);
-		AbilitySystemComponent->TryActivateAbilitiesByTag(RollTagContainer);
+	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName("Player.Abilities.Roll"));
+	if (stam > 15.0f && PlayerCombatComponent && !AbilitySystemComponent->HasMatchingGameplayTag(Tag)) {
+		AbilitySystemComponent->TryActivateAbilityByClass(UCharacterDodge::StaticClass());
+		//PlayerCombatComponent->Roll();
+		ApplyGameplayEffectToSelf(UseStamina);
+
+		//AbilitySystemComponent->TryActivateAbilitiesByTag(RollTagContainer);
 	}
 }
 
 void APlayerCharacter::BlockComplete(const FInputActionValue& Value)
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BLOCK"));
 	if (AbilitySystemComponent) {
 		FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");
 		FGameplayTagContainer BlockTagContainer;
 		BlockTagContainer.AddTag(BlockTag);
 		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(BlockTagContainer);
-		if (GEngine)
-		{
-			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("END BLOCK ENDED Applied"));
-		}
 	}
 }
+
 void APlayerCharacter::Block(const FInputActionValue& Value)
 {
-	if (GEngine)
-	{
-		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("BLOCK"));
-	}
 
 	FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");
 	FGameplayTagContainer BlockTagContainer;
@@ -435,8 +439,6 @@ void APlayerCharacter::Block(const FInputActionValue& Value)
 
 void APlayerCharacter::PlayerJump(const FInputActionValue& Value)
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("JUMP"));
-
 	double stam;
 	GetStamina_Implementation(stam);
 
@@ -449,7 +451,7 @@ void APlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	}
 }
 
-void APlayerCharacter::MoveForward(const FInputActionValue& Value)
+void APlayerCharacter::MoveForward(const FInputActionValue& Value, UInputAction* Action)
 {
 
 	if (Controller && Value.Get<float>() != 0.0f)
@@ -465,11 +467,11 @@ void APlayerCharacter::MoveForward(const FInputActionValue& Value)
 		else {
 			AddMovementInput(Direction, Value.Get<float>());
 		}
-
+		DirectionKey = GetMovementDirection(Action);
 	}
 }
 
-void APlayerCharacter::MoveRight(const FInputActionValue& Value)
+void APlayerCharacter::MoveRight(const FInputActionValue& Value, UInputAction* Action)
 {
 
 	if (Controller && Value.Get<float>() != 0.0f)
@@ -480,6 +482,7 @@ void APlayerCharacter::MoveRight(const FInputActionValue& Value)
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Direction, Value.Get<float>());
+		DirectionKey = GetMovementDirection(Action);
 	}
 
 }

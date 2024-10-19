@@ -18,14 +18,22 @@ class SOULSBORNE_API UCharacterAttackCombo : public UGameplayAbility
 public:
 	UCharacterAttackCombo();
 	UFUNCTION()
-	void OnMontageNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload);
+	void OnComboNotify();
+	bool bContinueCombo;
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 private:
+	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	void PerformComboAttack(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, UAbilitySystemComponent* ASC);
 
 	void InitializeAbilityTags(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, UAbilitySystemComponent* ASC);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montage", meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* MontageToPlay;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTagContainer OwnedTags;
+
+	bool bIsComboActive;
 };

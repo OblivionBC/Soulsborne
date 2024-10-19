@@ -29,7 +29,7 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	
+
 	//Creates Line trace between the two arrows of a PlayerEquipment object and traces for Actors with Ability System Component
 	void DamageTrace();
 	//Called by the PlayerCharacter when starting a Trace Period of an attack animation
@@ -40,6 +40,8 @@ public:
 	void ApplyDamage(AActor* Target, float Damage);
 	//Traces for actor, and adds them to the TargetLockActor property, which is checked in the Tick function to lock the players camera
 	void TargetLockCamera();
+
+	void Roll();
 	UPROPERTY()
 	APlayerEquipment* Weapon;
 
@@ -52,7 +54,10 @@ public:
 	UPROPERTY()
 	AActor* TargetLockIcon;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Default", meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* RollForwardMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Default")
 	UClass* TargetLockIconClass;
 
 	FCollisionQueryParams DamageTraceCollisionParams;

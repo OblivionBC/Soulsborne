@@ -15,11 +15,14 @@
 UCharacterAttackCombo::UCharacterAttackCombo()
 {
 	// Ability properties initialization
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Gorka/Combat/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
-	if (Montage.Succeeded())
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> SwordCombo(TEXT("/Game/Soulsbourne/Animations/Attacks/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
+	if (SwordCombo.Succeeded())
 	{
-		MontageToPlay = Montage.Object;
+
+		MontageToPlay = SwordCombo.Object;
 	}
+	bContinueCombo = false;
+	bIsComboActive = false;
 }
 
 void UCharacterAttackCombo::InitializeAbilityTags(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, UAbilitySystemComponent* ASC) {
@@ -57,40 +60,66 @@ void UCharacterAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	{
 		InitializeAbilityTags(Handle, ActorInfo, ActivationInfo, ASC);
 
-		USkeletalMeshComponent* SkeletalMeshComponent = nullptr;
-		UAnimInstance* AnimInstance = nullptr;
-
-		AActor* AvatarActor = ActorInfo->AvatarActor.Get();
-		if (AvatarActor)
-		{
-			SkeletalMeshComponent = AvatarActor->FindComponentByClass<USkeletalMeshComponent>();
-			AnimInstance = SkeletalMeshComponent->GetAnimInstance();
-		}
-
 		APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(ActorInfo->OwnerActor);
-		if (PlayerCharacter)
+		if (PlayerCharacter && MontageToPlay && !bIsComboActive)
 		{
-			// Bind to the player character's event dispatcher
-			PlayerCharacter->OnMontageNotify.AddDynamic(this, &UCharacterAttackCombo::OnMontageNotifyStart);
+			USkeletalMeshComponent* SkeletalMeshComponent = PlayerCharacter->FindComponentByClass<USkeletalMeshComponent>();
+			UAnimInstance* AnimInstance = SkeletalMeshComponent->GetAnimInstance();
+			if (SkeletalMeshComponent && AnimInstance)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Got to the Mon"));
+				// Perform your logic here
+				//PlayerCharacter->PlayAnimMontage(MontageToPlay);
+				bIsComboActive = true;
+				AnimInstance->Montage_Play(MontageToPlay);
+				FOnMontageEnded Delegate;
+				Delegate.BindUObject(this, &UCharacterAttackCombo::OnMontageEnded);
+				AnimInstance->Montage_SetEndDelegate(Delegate, MontageToPlay);
+			}
 		}
 
-		if (SkeletalMeshComponent && AnimInstance)
-		{
-			// Perform your logic here
-			AnimInstance->Montage_Play(MontageToPlay);
-		}
-
+		//Make it so that the 
 		PerformComboAttack(Handle, ActorInfo, ASC);
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-
-		ASC->RemoveLooseGameplayTags(ActivationOwnedTags);
-		ASC->UnBlockAbilitiesWithTags(BlockAbilitiesWithTag);
+		//EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 	}
 }
 
-void UCharacterAttackCombo::OnMontageNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload) {
-	UE_LOG(LogTemp, Log, TEXT("Binding OnPlayMontageNotifyBegin delegate"))
-		UE_LOG(LogTemp, Log, TEXT("Notify Begin: %s"), *NotifyName.ToString());
+void UCharacterAttackCombo::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage == MontageToPlay)
+	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bInterrupted);
+	}
+}
+
+void UCharacterAttackCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	if (MontageToPlay && ActorInfo->AvatarActor.IsValid())
+	{
+		ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
+		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+		if (Character && ASC)
+		{
+			Character->StopAnimMontage(MontageToPlay);
+			bIsComboActive = false;
+			bContinueCombo = false;
+			ASC->UnBlockAbilitiesWithTags(BlockAbilitiesWithTag);
+		}
+	}
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UCharacterAttackCombo::OnComboNotify() {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Notify"));
+	if (bContinueCombo)
+	{
+		bContinueCombo = false;
+	}
+	else
+	{
+		// Stop combo logic
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	}
 }
 void UCharacterAttackCombo::PerformComboAttack(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, UAbilitySystemComponent* ASC)
 {
