@@ -24,7 +24,6 @@
 
 
 //DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDealDamage, AActor*, DamagedActor, float, Damage, AController*, InstigatedBy);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMontageNotifyDelegate, FName, NotifyName, const FBranchingPointNotifyPayload&, BranchingPointPayload);
 UCLASS()
 class SOULSBORNE_API APlayerCharacter : public ACharacter, public IAbilitySystemInterface, public IProgressBarInterface, public IPlayerCombatInterface
 {
@@ -37,9 +36,6 @@ public:
 	void OnMontageNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointPayload);
 	UPROPERTY()
 	bool isComboActive;
-	UFUNCTION()
-	void OnComboMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-	UAnimMontage* MontageToPlay;
 	/**	----------------------------------- Functions ------------------------------------ **/
 	/* Attribute Functions   */
 	virtual void InitializeAttributes();
@@ -84,9 +80,6 @@ public:
 	virtual void BlockComplete(const FInputActionValue& Value);
 	virtual void PlayerJump(const FInputActionValue& Value);
 	virtual void LockCamera(const FInputActionValue& Value);
-	virtual void AttackComboAbility(const FInputActionValue& Value);
-	virtual void AttackComboClass(const FInputActionValue& Value);
-
 	const FKey GetMovementDirection(UInputAction* Action);
 
 	/**	----------------------------------- Properties ------------------------------------ **/
@@ -164,8 +157,5 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	FKey DirectionKey;
-
-	UPROPERTY(BlueprintAssignable, Category = "Animation")
-	FMontageNotifyDelegate OnMontageNotify;
 
 };

@@ -13,5 +13,6 @@ UCLASS()
 class SOULSBORNE_API UPlayerComboAttackNotify : public UAnimNotify
 {
 	GENERATED_BODY()
+	//Checks if the palyer that notified has the AttackCombo ability active, if so calls the CheckContinueCombo
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 };

@@ -8,6 +8,7 @@
 #include "PlayerEquipment.h"
 #include "ProgressBarInterface.h"
 #include "CharacterDodge.h"
+#include "AttackCombo.h"
 
 #include "AbilitySystemComponent.h"	
 #include "DrawDebugHelpers.h"
@@ -62,12 +63,6 @@ APlayerCharacter::APlayerCharacter()
 	bUseControllerRotationRoll = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
-
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Attacks/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
-	if (Montage.Succeeded())
-	{
-		MontageToPlay = Montage.Object;
-	}
 }
 
 /** Called when the game starts or when spawned */
@@ -93,15 +88,12 @@ void APlayerCharacter::BeginPlay()
 		{
 			Subsystem->AddMappingContext(MyInputMappingContext, 1);
 		}
-
-		this->GetMesh()->GetAnimInstance()->OnPlayMontageNotifyEnd.AddDynamic(this, &APlayerCharacter::OnMontageNotifyStart);
 	}
 }
 void APlayerCharacter::OnMontageNotifyStart(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload) {
-	OnMontageNotify.Broadcast(NotifyName, BranchingPointNotifyPayload);
-	if (MontageToPlay && !isAttacking)
+	if (!isAttacking)
 	{
-		GetMesh()->GetAnimInstance()->Montage_Stop(0.2f, MontageToPlay);
+		//GetMesh()->GetAnimInstance()->Montage_Stop(0.2f, MontageToPlay);
 		isComboActive = false;
 		isAttacking = false;
 		return;
@@ -253,7 +245,7 @@ void APlayerCharacter::GiveDefaultAbilities()
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility, 1, 0));
 		}
 		//C++ Implemented Abilities
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UCharacterAttackCombo::StaticClass(), 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UAttackCombo::StaticClass(), 1, 0));
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UCharacterDodge::StaticClass(), 1, 0));
 	}
 }
@@ -304,19 +296,15 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this, &APlayerCharacter::LookRight);
 		EnhancedInputComponent->BindAction(IA_LookUp, ETriggerEvent::Triggered, this, &APlayerCharacter::LookUp);
-		//>BindAction(Stalker_Character_Actions.Action_Move_Walk, ETriggerEvent::Completed, this, &AStalker_Character::On_Action_Move_Mode, ENPC_Movement_Mode::Walk, false);
 		//Ability Movement
 		EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Triggered, this, &APlayerCharacter::PlayerJump);
 		EnhancedInputComponent->BindAction(IA_LockCamera, ETriggerEvent::Started, this, &APlayerCharacter::LockCamera);
-		//Combat
-		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackComboClass);
-		//Ability Implementation : EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &APlayerCharacter::AttackComboAbility);
 
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Triggered, this, &APlayerCharacter::Block);
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Ongoing, this, &APlayerCharacter::Block);
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Completed, this, &APlayerCharacter::BlockComplete);
 
-		EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &APlayerCharacter::Roll);
+		//EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &APlayerCharacter::Roll);
 
 	}
 }
@@ -325,50 +313,6 @@ void APlayerCharacter::LockCamera(const FInputActionValue& Value) {
 
 	if (PlayerCombatComponent) {
 		PlayerCombatComponent->TargetLockCamera();
-	}
-}
-
-//Ability Implementation of AttackCombo, deprecated but may research soon
-void APlayerCharacter::AttackComboAbility(const FInputActionValue& Value)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ATTACK"));
-	double stam;
-	GetStamina_Implementation(stam);
-	FName ComboTag = "Character.AttackCombo";
-	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo"));
-
-	if (stam > 15.0f && !AbilitySystemComponent->HasMatchingGameplayTag(Tag)) {
-		AbilitySystemComponent->TryActivateAbilityByClass(UCharacterAttackCombo::StaticClass());
-		isAttacking = true;
-	}
-
-}
-
-//In Class implementation of Attack Combo
-void APlayerCharacter::AttackComboClass(const FInputActionValue& Value)
-{
-	double stam;
-	GetStamina_Implementation(stam);
-
-	if (stam > 15.0f && isComboActive && !isAttacking) {
-		isAttacking = true;
-
-	}
-	else if (stam > 15.0f && !isComboActive) {
-
-		if (MontageToPlay)
-		{
-			GetMesh()->GetAnimInstance()->Montage_Play(MontageToPlay);
-			FOnMontageEnded EndDelegate;
-			EndDelegate.BindUObject(this, &APlayerCharacter::OnComboMontageEnded);
-			GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
-			isAttacking = true;
-			isComboActive = true;
-
-			FGameplayTagContainer ActivationOwnedTags;
-			ActivationOwnedTags.AddTag((FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo"))));
-			AbilitySystemComponent->AddLooseGameplayTags(ActivationOwnedTags);
-		}
 	}
 }
 
@@ -394,14 +338,7 @@ const FKey APlayerCharacter::GetMovementDirection(UInputAction* Action)
 	FKey KeyDown;
 	return KeyDown;
 }
-//Delegate implementation for the combo attack montage
-void APlayerCharacter::OnComboMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
-	isComboActive = false;
-	isAttacking = false;
-	FGameplayTagContainer ActivationOwnedTags;
-	ActivationOwnedTags.AddTag((FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo"))));
-	AbilitySystemComponent->RemoveLooseGameplayTags(ActivationOwnedTags);
-}
+
 
 //Being migrated to C++ Ability Currently
 void APlayerCharacter::Roll(const FInputActionValue& Value)
@@ -411,7 +348,7 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName("Player.Abilities.Roll"));
 	if (stam > 15.0f && PlayerCombatComponent && !AbilitySystemComponent->HasMatchingGameplayTag(Tag)) {
 		AbilitySystemComponent->TryActivateAbilityByClass(UCharacterDodge::StaticClass());
-		//PlayerCombatComponent->Roll();
+		PlayerCombatComponent->Roll();
 		ApplyGameplayEffectToSelf(UseStamina);
 
 		//AbilitySystemComponent->TryActivateAbilitiesByTag(RollTagContainer);

@@ -6,12 +6,13 @@
 #include "PlayerCharacter.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
-#include "CharacterAttackCombo.h"
+#include "AttackCombo.h"
 
 
 void UPlayerComboAttackNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
 	Super::Notify(MeshComp, Animation);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("NEW NOTIFY CALLED"));
 
 	if (AActor* Owner = MeshComp->GetOwner())
 	{
@@ -22,21 +23,21 @@ void UPlayerComboAttackNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Notify IN ASC"));
 				// Retrieve the active abilities and find the combo attack ability
-				TArray<FGameplayAbilitySpec*> ActiveAbilities;
-				ASC->GetActivatableGameplayAbilitySpecsByAllMatchingTags(FGameplayTagContainer(), ActiveAbilities);
+				TArray<FGameplayAbilitySpec> ActiveAbilities = ASC->GetActivatableAbilities();
+				FGameplayTagContainer TagContainer;
+				TagContainer.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo")));
+				//ASC->GetActivatableGameplayAbilitySpecsByAllMatchingTags(TagContainer, ActiveAbilities);
+				ASC->GetActivatableAbilities();
 
-				for (FGameplayAbilitySpec* Spec : ActiveAbilities)
+				for (FGameplayAbilitySpec Spec : ActiveAbilities)
 				{
-					if (Spec->Ability->GetClass()->IsChildOf(UCharacterAttackCombo::StaticClass()) && Spec->IsActive())
-					{
-						UCharacterAttackCombo* ComboAbility = Cast<UCharacterAttackCombo>(Spec->Ability);
+						UAttackCombo* ComboAbility = Cast<UAttackCombo>(Spec.Ability);
 						if (ComboAbility)
 						{
 							GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("FOUND IT"));
-							ComboAbility->OnComboNotify();
+							ComboAbility->CheckContinueCombo(Character);
 						}
 
-					}
 				}
 			}
 		}
