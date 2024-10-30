@@ -9,6 +9,7 @@ Child of Actor Component Class
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "PlayerEquipment.h"
+#include "BaseCharacter.h"
 #include "PlayerCombatComponent.generated.h"
 
 
@@ -29,24 +30,25 @@ protected:
 public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
+	void ClearTimer();
 	//Creates Line trace between the two arrows of a PlayerEquipment object and traces for Actors with Ability System Component
 	void DamageTrace();
 	//Called by the PlayerCharacter when starting a Trace Period of an attack animation
 	void BeginDamageTrace(AActor* RHandArmament);
+	void BeginDamageTrace();
 	//Called by the PlayerCharacter when ending a Trace Period of an attack animation
 	void EndDamageTrace();
 	//Applies damage via Gameplay Effect
 	void ApplyDamage(AActor* Target, float Damage);
 	//Traces for actor, and adds them to the TargetLockActor property, which is checked in the Tick function to lock the players camera
 	void TargetLockCamera();
+	void TakeDamage();
 
-	void Roll();
 	UPROPERTY()
 	APlayerEquipment* Weapon;
 
 	UPROPERTY()
-	ACharacter* Owner;
+	ABaseCharacter* Owner;
 
 	UPROPERTY()
 	AActor* CameraLockActor;
@@ -56,6 +58,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Default", meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* RollForwardMontage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Default", meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* TakeDamageMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Default")
 	UClass* TargetLockIconClass;

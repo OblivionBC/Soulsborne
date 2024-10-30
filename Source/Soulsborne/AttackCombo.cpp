@@ -1,6 +1,8 @@
 // Class to execute a Combo Attack Implemented as a Gameplay Ability
 
 #include "AttackCombo.h"
+#include "BaseCharacter.h"
+#include "PlayerCombatComponent.h"
 #include "AbilitySystemComponent.h"	
 
 UAttackCombo::UAttackCombo()
@@ -9,17 +11,14 @@ UAttackCombo::UAttackCombo()
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Attacks/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
 	if (Montage.Succeeded())
 	{
-		if (GEngine) {
-			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Got Montage for New Attack COmbo"));
-
-		}
-
 		AbilityMontage = Montage.Object;
 	}
 
 	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo")));
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo")));
 	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Player.isAirborne")));
+	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.cantAct")));
+	ActivationBlockedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.isDead")));
 }
 
 void UAttackCombo::OnAbilityMontageEnd(UAnimMontage* Montage, bool bInterrupted)
@@ -27,14 +26,14 @@ void UAttackCombo::OnAbilityMontageEnd(UAnimMontage* Montage, bool bInterrupted)
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bInterrupted);
 }
 
-void UAttackCombo::CheckContinueCombo(ACharacter * Character)
+void UAttackCombo::CheckContinueCombo(ACharacter* Character)
 {
-	if (bContinueCombo == true) {
+	ABaseCharacter* base = Cast<ABaseCharacter>(Character);
+	if (bContinueCombo || bHoldingAttack) {
 		bContinueCombo = false;
 	}
 	else {
-
-		if(Character) {
+		if (Character) {
 			if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance()) {
 				if (AbilityMontage) {
 					AnimInstance->Montage_Stop(0.2f, AbilityMontage);
@@ -48,11 +47,11 @@ void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 {
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
+		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 		{
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		}
-		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 		UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
 		if (ASC && AnimInstance)
 		{
@@ -60,7 +59,6 @@ void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 			AnimInstance->Montage_Play(AbilityMontage);
 			AnimInstance->Montage_SetEndDelegate(AbilityMontageEnded, AbilityMontage);
 		}
-
 	}
 }
 
@@ -68,32 +66,40 @@ void UAttackCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 {
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 	bContinueCombo = false;
+	bHoldingAttack = true;
 	AbilityMontageEnded.Unbind();
+	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
+	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (Character && ASC && AnimInstance)
+	{
+		AnimInstance->OnMontageEnded.Clear();
+		AbilityMontageEnded.Unbind();
+	}
 }
 
 void UAttackCombo::HandleInputPressedEvent(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle SpecHandle)
 {
 	FGameplayAbilitySpec* Spec = ActorInfo->AbilitySystemComponent->FindAbilitySpecFromHandle(SpecHandle);
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	Spec->InputPressed = true;
 
-		Spec->InputPressed = true;
-
-		if (Spec->IsActive())
-		{
-			ASC->AbilitySpecInputPressed(*Spec);
-			bContinueCombo = true;
-		}
-		else
-		{
-			// Ability is not active, so try to activate it
-			ASC->TryActivateAbility(SpecHandle);
-		}
-	
-	
+	//If the ability is currently active, the input is to continue the combo, else it is to start it
+	if (Spec->IsActive())
+	{
+		ASC->AbilitySpecInputPressed(*Spec);
+		bContinueCombo = true;
+	}
+	else
+	{
+		ASC->TryActivateAbility(SpecHandle);
+		bHoldingAttack = true;
+	}
 }
 
 void UAttackCombo::HandleInputReleasedEvent(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle SpecHandle)
 {
+	bHoldingAttack = false;
 }
 
 void UAttackCombo::OnRemoveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
@@ -103,6 +109,13 @@ void UAttackCombo::OnRemoveAbility(const FGameplayAbilityActorInfo* ActorInfo, c
 void UAttackCombo::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
 {
 	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
+	if (ACharacter* character = Cast<ACharacter>(ActorInfo->OwnerActor)) {
 
+		if (UAnimInstance* AnimInstance = character->GetMesh()->GetAnimInstance()) {
+			if (AbilityMontage) {
+				AnimInstance->Montage_Stop(0.2f, AbilityMontage);
+			}
+		}
+	}
 	EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility, true);
 }

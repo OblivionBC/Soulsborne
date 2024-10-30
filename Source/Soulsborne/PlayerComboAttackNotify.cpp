@@ -3,7 +3,7 @@
 
 #include "PlayerComboAttackNotify.h"
 #include "CharacterAttackCombo.h"
-#include "PlayerCharacter.h"
+#include "SoulsPlayerCharacter.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
 #include "AttackCombo.h"
@@ -16,7 +16,7 @@ void UPlayerComboAttackNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 
 	if (AActor* Owner = MeshComp->GetOwner())
 	{
-		if (APlayerCharacter* Character = Cast<APlayerCharacter>(Owner))
+		if (ASoulsPlayerCharacter* Character = Cast<ASoulsPlayerCharacter>(Owner))
 		{
 			UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
 			if (ASC)
@@ -31,12 +31,12 @@ void UPlayerComboAttackNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 
 				for (FGameplayAbilitySpec Spec : ActiveAbilities)
 				{
-						UAttackCombo* ComboAbility = Cast<UAttackCombo>(Spec.Ability);
-						if (ComboAbility)
-						{
-							GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("FOUND IT"));
-							ComboAbility->CheckContinueCombo(Character);
-						}
+					UAttackCombo* ComboAbility = Cast<UAttackCombo>(Spec.Ability);
+					if (ComboAbility)
+					{
+						GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("FOUND IT"));
+						ComboAbility->CheckContinueCombo(Character);
+					}
 
 				}
 			}

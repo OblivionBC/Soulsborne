@@ -2,6 +2,7 @@
 
 #include "PlayerCombatComponent.h"
 #include "PlayerEquipment.h"
+#include "BaseCharacter.h"
 #include "SoulCharacter.h"
 #include "DynamicTakeDamage.h"
 
@@ -11,6 +12,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "GameplayEffect.h"
+#include "Containers/Map.h"
 #include "AbilitySystemComponent.h"
 #include "UObject/UnrealType.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -24,11 +26,11 @@ UPlayerCombatComponent::UPlayerCombatComponent()
 {
 	// We want this to tick since it will handle the TargetLock Logic
 	PrimaryComponentTick.bCanEverTick = true;
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> FrontRoll(TEXT("/Game/Soulsbourne/Animations/Dodge/MONT_Dodge_F.MONT_Dodge_F"));
-	if (FrontRoll.Succeeded())
-	{
 
-		RollForwardMontage = FrontRoll.Object;
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> TakeDamageMont(TEXT("/Game/Soulsbourne/Animations/Hit/MONT_Damage.MONT_Damage"));
+	if (TakeDamageMont.Succeeded())
+	{
+		TakeDamageMontage = TakeDamageMont.Object;
 	}
 }
 
@@ -59,11 +61,16 @@ void UPlayerCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 }
 
+void UPlayerCombatComponent::ClearTimer()
+{
+	GetOwner()->GetWorldTimerManager().ClearTimer(TraceTimerHandle);
+}
+
 
 void UPlayerCombatComponent::DamageTrace()
 {
 	if (!Owner) {
-		Owner = Cast<ACharacter>(GetOwner());
+		Owner = Cast<ABaseCharacter>(GetOwner());
 	}
 	//If the cast failed, return
 	if (Owner) {
@@ -82,41 +89,44 @@ void UPlayerCombatComponent::DamageTrace()
 			//Grab the start and end trace locations for the Player Weapon
 			FVector StartLocation = PlayerWeapon->GetStartAttackTrace()->GetComponentLocation();
 			FVector EndLocation = PlayerWeapon->GetEndAttackTrace()->GetComponentLocation();
-
-			//Creates a trace line that stores hit Objects in the HitResults array
-			bool bHasHit = GetWorld()->LineTraceMultiByObjectType(
+			float HalfHeight = (EndLocation - StartLocation).Size() * 0.5f;
+			DamageTraceCollisionParams.AddIgnoredActor(GetOwner());
+			float Radius = 35.0f;
+			bool bHasHit = GetWorld()->SweepMultiByChannel(
 				HitResults,
-				StartLocation,
-				EndLocation,
-				NewQueryParams,
+				StartLocation, EndLocation,
+				FQuat::Identity,
+				ECC_Pawn,
+				FCollisionShape::MakeCapsule(Radius, HalfHeight),
 				DamageTraceCollisionParams);
 
-			//Draws a debug for the line trace for development purposes
-			DrawDebugLine(
-				GetWorld(),
-				StartLocation,
-				EndLocation,
-				FColor::Green,
-				false, 1, 0, 1
-			);
+			DrawDebugCapsule(GetWorld(), StartLocation + (EndLocation - StartLocation) * 0.5f, HalfHeight, Radius, FQuat::Identity, FColor::Green, false, 2.0f);
 			//If we hit something(s), loop through the results and apply logic
 			if (bHasHit)
 			{
+				TMap<AActor*, bool> AttackedActors;
 				for (const FHitResult& Result : HitResults)
 				{
-					AActor* HitTarget = Result.GetActor();
+					ABaseCharacter* HitTarget = Cast<ABaseCharacter>(Result.GetActor());
 					//If the HitTarget is an actor, add it to the ignored actors for this DamageTracePeriod and attempt to apply damage
-					if (HitTarget)
+
+					if (HitTarget && !HitTarget->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Abilities.Roll"))))
 					{
-						//UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitTarget->GetName());
-
-						DamageTraceCollisionParams.AddIgnoredActor(HitTarget);
-						ApplyDamage(HitTarget, 40.0f);
-						//DamageDealt.Broadcast(this, 20, this->GetController());
-
+						if (!AttackedActors.Find(HitTarget)) {
+							UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitTarget->GetName());
+							HitTarget->printAttributes();
+							DamageTraceCollisionParams.AddIgnoredActor(HitTarget);
+							ApplyDamage(HitTarget, 30.0f);
+							AttackedActors.Add(HitTarget, true);
+							HitTarget->printAttributes();
+							if (UPlayerCombatComponent* CombatComponent = HitTarget->FindComponentByClass<UPlayerCombatComponent>()) {
+								CombatComponent->TakeDamage();
+							}
+						}
 					}
 
 				}
+				UE_LOG(LogTemp, Warning, TEXT("Hit: %i"), HitResults.Num());
 			}
 
 		}
@@ -128,9 +138,24 @@ void UPlayerCombatComponent::DamageTrace()
 void UPlayerCombatComponent::BeginDamageTrace(AActor* RHandArmament)
 {
 	if (!Owner) {
-		Owner = Cast<ACharacter>(GetOwner());
+		Owner = Cast<ABaseCharacter>(GetOwner());
 	}
 	Weapon = Cast<APlayerEquipment>(RHandArmament);
+	//If the weapon and Character were retreived successfully, start the Trace logic
+	if (Weapon && Owner) {
+		DamageTraceCollisionParams.AddIgnoredActor(GetOwner());
+		//Creates a Timer for the TracerTimerHandle that plays the DamageTrace function
+		Owner->GetWorldTimerManager().SetTimer(TraceTimerHandle, this, &UPlayerCombatComponent::DamageTrace, 0.01f, true);
+		DamageTrace();
+	}
+}
+
+void UPlayerCombatComponent::BeginDamageTrace()
+{
+	if (!Owner) {
+		Owner = Cast<ABaseCharacter>(GetOwner());
+	}
+	Weapon = Cast<APlayerEquipment>(Owner->RHandArmament);
 	//If the weapon and Character were retreived successfully, start the Trace logic
 	if (Weapon && Owner) {
 		DamageTraceCollisionParams.AddIgnoredActor(GetOwner());
@@ -144,12 +169,12 @@ void UPlayerCombatComponent::BeginDamageTrace(AActor* RHandArmament)
 void UPlayerCombatComponent::EndDamageTrace()
 {
 	if (!Owner) {
-		Owner = Cast<ACharacter>(GetOwner());
+		Owner = Cast<ABaseCharacter>(GetOwner());
 	}
 	if (Owner)
 	{
 		//Gets rid of the timer and ignored actors
-		Owner->GetWorldTimerManager().ClearTimer(TraceTimerHandle);
+		ClearTimer();
 		DamageTraceCollisionParams.ClearIgnoredActors();
 
 	}
@@ -159,7 +184,7 @@ void UPlayerCombatComponent::EndDamageTrace()
 //Traces for a character and binds the CameraLockActor to it, which results in the player camera being locked onto the actor
 void UPlayerCombatComponent::TargetLockCamera() {
 	if (!Owner) {
-		Owner = Cast<ACharacter>(GetOwner());
+		Owner = Cast<ABaseCharacter>(GetOwner());
 	}
 	if (Owner) {
 		APlayerController* PlayerController = Cast<APlayerController>(Owner->GetController());
@@ -211,7 +236,6 @@ void UPlayerCombatComponent::TargetLockCamera() {
 					OutHit,
 					true
 				);
-
 				//When we hit something and it is a character, bind the CameraLockActor to it and Change the Players Movement
 				if (bHit && Cast<ACharacter>(OutHit.GetActor()))
 				{
@@ -246,46 +270,46 @@ void UPlayerCombatComponent::TargetLockCamera() {
 
 }
 
+void UPlayerCombatComponent::TakeDamage()
+{
+	if (!Owner) {
+		Owner = Cast<ABaseCharacter>(GetOwner());
+	}
+	if (Owner) {
+		Owner->PlayAnimMontage(TakeDamageMontage);
+		Owner->onDamaged();
+		double health;
+		Owner->GetHealth_Implementation(health);
+		if (health <= 0) {
+			Owner->GetAbilitySystemComponent()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Character.isDead")));
+			Owner->GetMesh()->SetSimulatePhysics(true);
+			Owner->GetMesh()->GetAnimInstance()->Montage_Stop(0.0f);
+		}
+	}
+}
+
 //Attempts to apply damage to a target actor (Is currently static value)
 void UPlayerCombatComponent::ApplyDamage(AActor* Target, float Damage) {
 	if (Target) {
 		UAbilitySystemComponent* TargetASC = Target->FindComponentByClass<UAbilitySystemComponent>();
 		//if the target has a Ability System Component, try to apply Damage Gameplay Effect to it
 		if (TargetASC) {
+
 			//Create a spec for the DamageEffectClass
 			FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(UDynamicTakeDamage::StaticClass(), 1.0f, TargetASC->MakeEffectContext());
 			if (SpecHandle.IsValid())
 			{
-				Damage *= -1.0f;
-				FGameplayEffectSpec* Spec = SpecHandle.Data.Get();
-
-				//Caller Magnitude is not working dynamically, hard coded in Effect
-				Spec->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Data.Damage")), Damage);
-				TargetASC->ApplyGameplayEffectSpecToSelf(*Spec);
-
-				//If it is ASoulCharacter, call the Damaged function to apply damage logic
-				ASoulCharacter* SoulCharacter = Cast<ASoulCharacter>(Target);
-				if (SoulCharacter) {
-					SoulCharacter->Damaged();
+				FGameplayEffectSpec* EffectSpec = SpecHandle.Data.Get();
+				if (EffectSpec)
+				{
+					FGameplayModifierInfo DamageModifier;
+					DamageModifier.ModifierOp = EGameplayModOp::Additive;
+					DamageModifier.ModifierMagnitude = FScalableFloat(Damage * -1);
+					TargetASC->ApplyGameplayEffectSpecToSelf(*EffectSpec);
 				}
+
 				//UE_LOG(LogTemp, Warning, TEXT("Target Health After %f"), Target->GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
 			}
-		}
-	}
-
-}
-
-//WIP
-void UPlayerCombatComponent::Roll() {
-
-	if (!Owner) {
-		Owner = Cast<ACharacter>(GetOwner());
-	}
-	if (Owner) {
-		USkeletalMeshComponent* Mesh = Owner->GetMesh();
-		if (Mesh) {
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("InMESH"));
-			Mesh->GetAnimInstance()->Montage_Play(RollForwardMontage);
 		}
 	}
 }

@@ -33,12 +33,13 @@ void UBaseGameplayAbility::SetInputBindings(const FGameplayAbilityActorInfo* Act
 				if (UBaseGameplayAbility* AbilityInstance = Cast<UBaseGameplayAbility>(Spec.Ability.Get()))
 				{
 					if (AbilityInstance->AbilityInputAction) {
+						//As long as the InputStartTriggerType was not set to None, we bind the event
 						if (AbilityInstance->InputStartTriggerType != ETriggerEvent::None)
 						{
 							EnhancedInputComponent->BindAction(AbilityInstance->AbilityInputAction, AbilityInstance->InputStartTriggerType, AbilityInstance, &ThisClass::HandleInputPressedEvent, ActorInfo, Spec.Handle);
 
 						}
-
+						//As long as the InputStartTriggerType was not set to None, we bind the event
 						if (AbilityInstance->InputCompletedTriggerType != ETriggerEvent::None)
 						{
 							EnhancedInputComponent->BindAction(AbilityInstance->AbilityInputAction, AbilityInstance->InputCompletedTriggerType, AbilityInstance, &ThisClass::HandleInputReleasedEvent, ActorInfo, Spec.Handle);

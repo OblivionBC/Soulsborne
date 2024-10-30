@@ -11,11 +11,12 @@ void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
 {
 	if (AActor* Owner = MeshComp->GetOwner())
 	{
-		if (Owner->GetClass()->ImplementsInterface(UPlayerCombatInterface::StaticClass()))
+		UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>();
+		if (CombatComponent)
 		{
 			//BeginTrace
-			IPlayerCombatInterface::Execute_StartDamageTrace(Owner);
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Notify Called"));
+			CombatComponent->BeginDamageTrace();
+			//IPlayerCombatInterface::Execute_StartDamageTrace(Owner);
 		}
 	}
 }
@@ -24,10 +25,12 @@ void UAttackTraceNotify::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequen
 {
 	if (AActor* Owner = MeshComp->GetOwner())
 	{
-		if (Owner->GetClass()->ImplementsInterface(UPlayerCombatInterface::StaticClass()))
+		UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>();
+		if (CombatComponent)
 		{
-			//End Sword Trace
-			IPlayerCombatInterface::Execute_EndDamageTrace(Owner);
+			//BeginTrace
+			CombatComponent->EndDamageTrace();
+			//IPlayerCombatInterface::Execute_EndDamageTrace(Owner);
 		}
 	}
 }

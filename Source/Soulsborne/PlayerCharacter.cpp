@@ -348,7 +348,6 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName("Player.Abilities.Roll"));
 	if (stam > 15.0f && PlayerCombatComponent && !AbilitySystemComponent->HasMatchingGameplayTag(Tag)) {
 		AbilitySystemComponent->TryActivateAbilityByClass(UCharacterDodge::StaticClass());
-		PlayerCombatComponent->Roll();
 		ApplyGameplayEffectToSelf(UseStamina);
 
 		//AbilitySystemComponent->TryActivateAbilitiesByTag(RollTagContainer);
