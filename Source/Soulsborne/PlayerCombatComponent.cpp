@@ -276,8 +276,8 @@ void UPlayerCombatComponent::TakeDamage()
 		Owner = Cast<ABaseCharacter>(GetOwner());
 	}
 	if (Owner) {
-		Owner->PlayAnimMontage(TakeDamageMontage);
-		Owner->onDamaged();
+		//Owner->PlayAnimMontage(TakeDamageMontage);
+		Owner->SoulsTakeDamage();
 		double health;
 		Owner->GetHealth_Implementation(health);
 		if (health <= 0) {

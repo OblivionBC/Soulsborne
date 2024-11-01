@@ -76,6 +76,12 @@ void ABaseCharacter::printAttributes()
 	UE_LOG(LogTemp, Warning, TEXT(" Mana: %f"), result);
 	UE_LOG(LogTemp, Warning, TEXT("Max Stat: %d"), MaxStat);
 }
+void ABaseCharacter::CalculateDamage()
+{
+}
+void ABaseCharacter::SoulsTakeDamage()
+{
+}
 /** Player Progress Bar Interface Implementations **/
 void ABaseCharacter::GetStamina_Implementation(double& Result) const {
 	if (AbilitySystemComponent) {

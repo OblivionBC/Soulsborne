@@ -26,6 +26,14 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	float minDamage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	float maxDamage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	FName DamageType;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	FName WeaponType;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "root")

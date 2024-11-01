@@ -19,9 +19,8 @@ public:
 	// Sets default values for this character's properties
 	ANonPlayerCharacter();
 
-	UFUNCTION()
-	void Damaged();
 protected:
+	virtual void SoulsTakeDamage() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void GiveDefaultAbilities();

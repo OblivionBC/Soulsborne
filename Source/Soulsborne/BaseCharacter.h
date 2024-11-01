@@ -36,8 +36,8 @@ public:
 	void AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName);
 	const FKey GetMovementDirection(UInputAction* Action);
 	virtual void printAttributes();
-	UFUNCTION(BlueprintImplementableEvent)
-	void onDamaged();
+	virtual void CalculateDamage();
+	virtual void SoulsTakeDamage();
 protected:
 	// Called when the game starts or when spawned
 	UAbilitySystemComponent* AbilitySystemComponent;

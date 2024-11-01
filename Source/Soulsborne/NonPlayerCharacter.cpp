@@ -65,12 +65,20 @@ void ANonPlayerCharacter::OnRep_PlayerState()
 	GiveDefaultAbilities();
 	printAttributes();
 }
-
-void ANonPlayerCharacter::Damaged() {
+void ANonPlayerCharacter::SoulsTakeDamage() {
+	Super::SoulsTakeDamage();
+	UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGE BEFORE IUMP"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED BEFORE THE IMP"));
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (ASC) {
+		UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGES"));
 		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
-
+		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
+		printAttributes();
+		float NewHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) - 90.0f;
+		printAttributes();
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED"));
+		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
 		UE_LOG(LogTemp, Warning, TEXT("Health IS HEREEEEEEEE %f"), ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
 		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		if (CurrentHealth <= 0)
@@ -83,6 +91,7 @@ void ANonPlayerCharacter::Damaged() {
 				UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 				if (AnimInstance)
 				{
+					UE_LOG(LogTemp, Warning, TEXT("AtTheHitMontage"));
 					GetAbilitySystemComponent()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Character.cantAct")));
 					AnimInstance->Montage_Play(HitMontage);
 				}
@@ -90,6 +99,7 @@ void ANonPlayerCharacter::Damaged() {
 		}
 	}
 }
+
 
 /** Initialize the character's attributes */
 void ANonPlayerCharacter::InitializeAttributes()
