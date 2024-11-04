@@ -16,7 +16,9 @@ APlayerEquipment::APlayerEquipment()
 	EndAttackTrace = CreateDefaultSubobject<UArrowComponent>("EndAttackTrace");
 	EndAttackTrace->SetupAttachment(SkeletalMesh);
 
-
+	minDamage = 2;
+	maxDamage = 5;
+	DamageType = FName(TEXT("Neutral"));
 }
 
 // Called when the game starts or when spawned

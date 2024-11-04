@@ -20,7 +20,7 @@ public:
 	ANonPlayerCharacter();
 
 protected:
-	virtual void SoulsTakeDamage() override;
+	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void GiveDefaultAbilities();

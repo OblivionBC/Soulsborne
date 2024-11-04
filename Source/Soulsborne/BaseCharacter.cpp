@@ -76,10 +76,7 @@ void ABaseCharacter::printAttributes()
 	UE_LOG(LogTemp, Warning, TEXT(" Mana: %f"), result);
 	UE_LOG(LogTemp, Warning, TEXT("Max Stat: %d"), MaxStat);
 }
-void ABaseCharacter::CalculateDamage()
-{
-}
-void ABaseCharacter::SoulsTakeDamage()
+void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 {
 }
 /** Player Progress Bar Interface Implementations **/

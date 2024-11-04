@@ -147,6 +147,44 @@ void ASoulsPlayerCharacter::EndDamageTrace_Implementation() const
 		PlayerCombatComponent->EndDamageTrace();
 	}
 }
+
+void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) {
+	UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %f"), DamageAmount);
+	//UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %s"), DamageType);
+	UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGE BEFORE IUMP IN PLAYER"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED BEFORE THE IMP IN PLAYER"));
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC) {
+
+		/// Here can calculate the damage based on the damage type, for now we just do the damage amount
+		UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGES IN PLAYER"));
+		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
+		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
+		printAttributes();
+		float NewHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) - DamageAmount;
+		printAttributes();
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED IN PLAYER"));
+		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
+		UE_LOG(LogTemp, Warning, TEXT("PLAYER Health IS HEREEEEEEEE %f"), ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
+		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
+		if (CurrentHealth <= 0)
+		{
+			this->GetMesh()->SetSimulatePhysics(true);
+		}
+		else {
+			if (HitMontage)
+			{
+				UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+				if (AnimInstance)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("AtTheHitMontage"));
+					GetAbilitySystemComponent()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Character.cantAct")));
+					AnimInstance->Montage_Play(HitMontage);
+				}
+			}
+		}
+	}
+}
 ///////////////////////////////////////////////////             Abilities                ///////////////////////////////////////////////////////////////////
 //Apply a gameplay effect to player
 void ASoulsPlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply) {

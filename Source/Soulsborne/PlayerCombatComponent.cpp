@@ -116,12 +116,9 @@ void UPlayerCombatComponent::DamageTrace()
 							UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitTarget->GetName());
 							HitTarget->printAttributes();
 							DamageTraceCollisionParams.AddIgnoredActor(HitTarget);
-							ApplyDamage(HitTarget, 30.0f);
 							AttackedActors.Add(HitTarget, true);
 							HitTarget->printAttributes();
-							if (UPlayerCombatComponent* CombatComponent = HitTarget->FindComponentByClass<UPlayerCombatComponent>()) {
-								CombatComponent->TakeDamage();
-							}
+							HitTarget->SoulsTakeDamage(PlayerWeapon->maxDamage, PlayerWeapon->DamageType);
 						}
 					}
 
@@ -277,7 +274,7 @@ void UPlayerCombatComponent::TakeDamage()
 	}
 	if (Owner) {
 		//Owner->PlayAnimMontage(TakeDamageMontage);
-		Owner->SoulsTakeDamage();
+		//Owner->SoulsTakeDamage();
 		double health;
 		Owner->GetHealth_Implementation(health);
 		if (health <= 0) {

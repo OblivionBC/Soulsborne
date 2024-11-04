@@ -37,6 +37,7 @@ public:
 protected:
 	/* Attribute Functions   */
 	virtual void InitializeAttributes();
+	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
 
 	/* Player Combat Interface Functions*/
 	virtual void StartDamageTrace_Implementation() const override;
@@ -78,6 +79,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* SpringArm;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UAnimMontage* HitMontage;
 protected:
 	/* Abilities */
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")

@@ -65,17 +65,20 @@ void ANonPlayerCharacter::OnRep_PlayerState()
 	GiveDefaultAbilities();
 	printAttributes();
 }
-void ANonPlayerCharacter::SoulsTakeDamage() {
-	Super::SoulsTakeDamage();
+void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) {
+	UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %f"), DamageAmount);
+	//UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %s"), DamageType);
 	UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGE BEFORE IUMP"));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED BEFORE THE IMP"));
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (ASC) {
+
+		/// Here can calculate the damage based on the damage type, for now we just do the damage amount
 		UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGES"));
 		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
 		printAttributes();
-		float NewHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) - 90.0f;
+		float NewHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) - DamageAmount;
 		printAttributes();
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED"));
 		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
