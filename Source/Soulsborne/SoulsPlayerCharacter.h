@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BaseCharacter.h"
 #include "GameFramework/Character.h"
 #include "GameplayTagContainer.h"
 #include <GameplayEffectTypes.h>
@@ -14,7 +13,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
-#include "AbilitySystemInterface.h"
+#include "BaseCharacter.h"
 #include "PlayerCombatComponent.h"
 #include "ProgressBarInterface.h"
 #include "PlayerCombatInterface.h"
@@ -53,7 +52,7 @@ protected:
 	virtual void GiveDefaultAbilities();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
 	virtual void ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply);
-	
+
 	/* Input Functions */
 	virtual void MoveForward(const FInputActionValue& Value, UInputAction* Action);
 	virtual void MoveRight(const FInputActionValue& Value, UInputAction* Action);
@@ -73,7 +72,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	FKey DirectionKey;
 
-		/* Camera */
+	/* Camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* Camera;
 
@@ -83,12 +82,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UAnimMontage* HitMontage;
 protected:
-	/* Abilities */
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")
-	TSubclassOf<class UGameplayEffect> DefaultAttributeEffect;
-
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")
-	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayEffect> RechargeStaminaEffect;

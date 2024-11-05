@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
+#include "BehaviorTree/BehaviorTreeTypes.h"
 #include "PlayerCombatComponent.h"
 #include "NonPlayerCharacter.generated.h"
 
@@ -18,7 +22,7 @@ class SOULSBORNE_API ANonPlayerCharacter : public ABaseCharacter
 public:
 	// Sets default values for this character's properties
 	ANonPlayerCharacter();
-
+	UBehaviorTree* GetBehaviorTree();
 protected:
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
 	virtual void BeginPlay() override;
@@ -32,6 +36,9 @@ protected:
 	UPlayerCombatComponent* CombatComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	UAnimMontage* HitMontage;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
+	UBehaviorTree* BehaviorTree;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")
 	TSubclassOf<class UGameplayEffect> DefaultAttributeEffect;

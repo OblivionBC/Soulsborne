@@ -26,6 +26,11 @@ ANonPlayerCharacter::ANonPlayerCharacter()
 	}
 }
 
+UBehaviorTree* ANonPlayerCharacter::GetBehaviorTree()
+{
+	return BehaviorTree;
+}
+
 /** Called when the game starts or when spawned */
 void ANonPlayerCharacter::BeginPlay()
 {

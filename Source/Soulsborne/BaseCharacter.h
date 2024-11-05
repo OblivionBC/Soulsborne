@@ -52,6 +52,9 @@ protected:
 	UPROPERTY()
 	class USoulAttributeSet* Attributes;
 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Abilities")
+	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayEffect> StartingStatEffect;
 public:
