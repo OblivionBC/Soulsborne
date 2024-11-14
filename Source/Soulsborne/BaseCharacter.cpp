@@ -79,6 +79,12 @@ void ABaseCharacter::printAttributes()
 void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 {
 }
+void ABaseCharacter::SetMaxHealth(int NewMaxHealth)
+{
+	if (NewMaxHealth > 0) {
+		MaxHealth = NewMaxHealth;
+	}
+}
 /** Player Progress Bar Interface Implementations **/
 void ABaseCharacter::GetStamina_Implementation(double& Result) const {
 	if (AbilitySystemComponent) {

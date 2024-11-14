@@ -64,6 +64,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
 	AActor* LHandArmament;
+
+	UFUNCTION(BlueprintCallable)
+	void SetMaxHealth(int NewMaxHealth);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	int MaxHealth = 100;
 

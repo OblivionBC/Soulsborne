@@ -23,6 +23,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/ArrowComponent.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
+#include "Perception/AISense_Sight.h"
 
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
@@ -56,6 +58,8 @@ ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 	bUseControllerRotationRoll = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+
+	SetupStimulusSource();
 }
 
 /** Called when the game starts or when spawned */
@@ -150,26 +154,20 @@ void ASoulsPlayerCharacter::EndDamageTrace_Implementation() const
 
 void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) {
 	UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %f"), DamageAmount);
-	//UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %s"), DamageType);
-	UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGE BEFORE IUMP IN PLAYER"));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED BEFORE THE IMP IN PLAYER"));
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (ASC) {
-
-		/// Here can calculate the damage based on the damage type, for now we just do the damage amount
 		UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGES IN PLAYER"));
 		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
-		printAttributes();
-		float NewHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) - DamageAmount;
-		printAttributes();
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED IN PLAYER"));
+		float NewHealth = CurrentHealth - DamageAmount;
 		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
 		UE_LOG(LogTemp, Warning, TEXT("PLAYER Health IS HEREEEEEEEE %f"), ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
 		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		if (CurrentHealth <= 0)
 		{
 			this->GetMesh()->SetSimulatePhysics(true);
+			ASC->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Character.isDead")));
 		}
 		else {
 			if (HitMontage)
@@ -177,14 +175,13 @@ void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType
 				UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 				if (AnimInstance)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("AtTheHitMontage"));
-					GetAbilitySystemComponent()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Character.cantAct")));
 					AnimInstance->Montage_Play(HitMontage);
 				}
 			}
 		}
 	}
 }
+
 ///////////////////////////////////////////////////             Abilities                ///////////////////////////////////////////////////////////////////
 //Apply a gameplay effect to player
 void ASoulsPlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply) {
@@ -259,6 +256,15 @@ void ASoulsPlayerCharacter::LockCamera(const FInputActionValue& Value) {
 
 	if (PlayerCombatComponent) {
 		PlayerCombatComponent->TargetLockCamera();
+	}
+}
+
+void ASoulsPlayerCharacter::SetupStimulusSource()
+{
+	StimulusSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("Stimulus"));
+	if (StimulusSource) {
+		StimulusSource->RegisterForSense(TSubclassOf<UAISense_Sight>());
+		StimulusSource->RegisterWithPerceptionSystem();
 	}
 }
 

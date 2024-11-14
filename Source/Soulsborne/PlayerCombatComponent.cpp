@@ -27,11 +27,7 @@ UPlayerCombatComponent::UPlayerCombatComponent()
 	// We want this to tick since it will handle the TargetLock Logic
 	PrimaryComponentTick.bCanEverTick = true;
 
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> TakeDamageMont(TEXT("/Game/Soulsbourne/Animations/Hit/MONT_Damage.MONT_Damage"));
-	if (TakeDamageMont.Succeeded())
-	{
-		TakeDamageMontage = TakeDamageMont.Object;
-	}
+
 }
 
 
