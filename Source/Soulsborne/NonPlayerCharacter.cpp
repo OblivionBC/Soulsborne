@@ -77,7 +77,6 @@ void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) 
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("IN DAMAGED BEFORE THE IMP"));
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (ASC) {
-
 		/// Here can calculate the damage based on the damage type, for now we just do the damage amount
 		UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGES"));
 		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
@@ -91,7 +90,7 @@ void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) 
 		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		if (CurrentHealth <= 0)
 		{
-			this->GetMesh()->SetSimulatePhysics(true);
+			OnDeath();
 		}
 		else {
 			if (HitMontage)
@@ -108,6 +107,13 @@ void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) 
 	}
 }
 
+void ANonPlayerCharacter::OnDeath()
+{
+	Super::OnDeath();
+
+	this->GetMesh()->SetSimulatePhysics(true);
+	DetachFromControllerPendingDestroy();
+}
 
 /** Initialize the character's attributes */
 void ANonPlayerCharacter::InitializeAttributes()

@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "BaseCharacter.h"	
+#include "BaseCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 ABaseCharacter::ABaseCharacter()
@@ -20,6 +21,12 @@ UAbilitySystemComponent* ABaseCharacter::GetAbilitySystemComponent()
 {
 	return AbilitySystemComponent;
 }
+
+void ABaseCharacter::OnDeath()
+{
+	UE_LOG(LogTemp, Display, TEXT("OnDeath"));
+}
+
 
 //Used to attatch equipment to the socket name specified, currently static for development purposes
 void ABaseCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName) {

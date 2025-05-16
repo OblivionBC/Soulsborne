@@ -26,6 +26,7 @@ public:
 protected:
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
 	virtual void BeginPlay() override;
+	virtual void OnDeath() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void GiveDefaultAbilities();
 	virtual void PossessedBy(AController* NewController) override;

@@ -65,6 +65,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
 	AActor* LHandArmament;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	bool bIsDead = false;
+
+	UFUNCTION(BlueprintCallable)
+	virtual void OnDeath();
+	
 	UFUNCTION(BlueprintCallable)
 	void SetMaxHealth(int NewMaxHealth);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
