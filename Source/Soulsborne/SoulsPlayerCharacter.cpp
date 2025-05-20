@@ -9,7 +9,6 @@
 #include "PlayerCombatInterface.h"
 #include "PlayerEquipment.h"
 #include "ProgressBarInterface.h"
-#include "CharacterDodge.h"
 #include "Dodge.h"
 #include "AttackCombo.h"
 
@@ -210,7 +209,6 @@ void ASoulsPlayerCharacter::GiveDefaultAbilities()
 		}
 		//C++ Implemented Abilities
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UAttackCombo::StaticClass(), 1, 0));
-		//AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UCharacterDodge::StaticClass(), 1, 0));
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UDodge::StaticClass(), 1, 0));
 	}
 }

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "SoulCharacter.h"
-#include "PlayerCharacter.h"
 #include "ProgressBarInterface.h"
 #include "AbilitySystemInterface.h"
 #include "EnemyClass.generated.h"
@@ -44,7 +43,4 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	UAnimMontage* HitMontage;
-protected:
-	UPROPERTY(EditAnywhere)
-	APlayerCharacter* PlayerCharacter;
 };

@@ -24,7 +24,6 @@ UAbilitySystemComponent* ABaseCharacter::GetAbilitySystemComponent()
 
 void ABaseCharacter::OnDeath()
 {
-	UE_LOG(LogTemp, Display, TEXT("OnDeath"));
 }
 
 

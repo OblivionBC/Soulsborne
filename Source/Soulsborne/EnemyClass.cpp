@@ -3,7 +3,6 @@
 
 #include "EnemyClass.h"
 #include "AbilitySystemComponent.h"		
-#include "PlayerCharacter.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "SoulAttributeSet.h"					
@@ -14,7 +13,6 @@ AEnemyClass::AEnemyClass()
 {
 	// Initialize the ability system component
 	printAttributes();
-	PlayerCharacter = Cast<APlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 }
 
 void AEnemyClass::printAttributes()
@@ -43,7 +41,6 @@ void AEnemyClass::Damaged() {
 		if (GEngine)
 		{
 			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DAMAGE Applied"));
-			UE_LOG(LogTemp, Warning, TEXT("Health %f"), ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
 		}
 		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		if (CurrentHealth <= 0)

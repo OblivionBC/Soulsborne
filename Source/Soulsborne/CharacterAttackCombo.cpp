@@ -8,7 +8,6 @@
 #include "Animation/AnimInstance.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Animation/AnimMontage.h"
-#include "PlayerCharacter.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 
@@ -59,24 +58,6 @@ void UCharacterAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo) && ASC)
 	{
 		InitializeAbilityTags(Handle, ActorInfo, ActivationInfo, ASC);
-
-		APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(ActorInfo->OwnerActor);
-		if (PlayerCharacter && MontageToPlay && !bIsComboActive)
-		{
-			USkeletalMeshComponent* SkeletalMeshComponent = PlayerCharacter->FindComponentByClass<USkeletalMeshComponent>();
-			UAnimInstance* AnimInstance = SkeletalMeshComponent->GetAnimInstance();
-			if (SkeletalMeshComponent && AnimInstance)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Got to the Mon"));
-				// Perform your logic here
-				//PlayerCharacter->PlayAnimMontage(MontageToPlay);
-				bIsComboActive = true;
-				AnimInstance->Montage_Play(MontageToPlay);
-				FOnMontageEnded Delegate;
-				Delegate.BindUObject(this, &UCharacterAttackCombo::OnMontageEnded);
-				AnimInstance->Montage_SetEndDelegate(Delegate, MontageToPlay);
-			}
-		}
 
 		//Make it so that the 
 		PerformComboAttack(Handle, ActorInfo, ASC);

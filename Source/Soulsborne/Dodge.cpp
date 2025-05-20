@@ -8,7 +8,6 @@
 #include "Animation/AnimInstance.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Animation/AnimMontage.h"
-#include "PlayerCharacter.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 #include "SoulsPlayerCharacter.h"
@@ -63,6 +62,7 @@ void UDodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 		ABaseCharacter* Owner = Cast<ABaseCharacter>(ActorInfo->OwnerActor);
 		if (Owner)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("USING THE DODGE CLASS"));
 			Dodge(Owner);
 		}
 	}
@@ -84,7 +84,6 @@ void UDodge::Dodge(ABaseCharacter* Player)
 
 		//Not Locked on a Target
 		if (Player->GetCharacterMovement()->bUseControllerDesiredRotation == false) {
-			UE_LOG(LogTemp, Warning, TEXT("UsingRotation"));
 			AnimInstance->Montage_Play(DodgeF);
 			AnimInstance->Montage_SetEndDelegate(AbilityMontageEnded, DodgeF);
 			return;
@@ -93,31 +92,24 @@ void UDodge::Dodge(ABaseCharacter* Player)
 		FKey KeyDown = SoulsPlayerCharacter->DirectionKey;
 		//Player is holding down A (Roll Left)
 		if (KeyDown.GetFName().ToString() == "A") {
-			UE_LOG(LogTemp, Warning, TEXT("A Clicked"));
 			AnimInstance->Montage_Play(DodgeL);
 			AnimInstance->Montage_SetEndDelegate(AbilityMontageEnded, DodgeL);
-			UE_LOG(LogTemp, Warning, TEXT("Montage played and delegte set"));
 			return;
 		}
 		//Player is holding down S (Roll Backwards)
 		else if (KeyDown.GetFName().ToString() == "S") {
-			UE_LOG(LogTemp, Warning, TEXT("S Clicked"));
 			AnimInstance->Montage_Play(DodgeB);
 			AnimInstance->Montage_SetEndDelegate(AbilityMontageEnded, DodgeB);
-			UE_LOG(LogTemp, Warning, TEXT("Montage played and delegte set"));
 			return;
 		}
 		//Player is holding down D (Roll Right)
 		else if (KeyDown.GetFName().ToString() == "D") {
-			UE_LOG(LogTemp, Warning, TEXT("D Clicked"));
 			AnimInstance->Montage_Play(DodgeR);
 			AnimInstance->Montage_SetEndDelegate(AbilityMontageEnded, DodgeR);
-			UE_LOG(LogTemp, Warning, TEXT("Montage played and delegte set"));
 			return;
 		}
 		//Player is holding down W (Roll Forward)
 		else {
-			UE_LOG(LogTemp, Warning, TEXT("W Clicked"));
 			AnimInstance->Montage_Play(DodgeF);
 			AnimInstance->Montage_SetEndDelegate(AbilityMontageEnded, DodgeF);
 			return;
