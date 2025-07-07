@@ -15,6 +15,7 @@ ASoulCharacter::ASoulCharacter()
 
 	// Initialize the attribute set
 	Attributes = CreateDefaultSubobject<USoulAttributeSet>("AttributesSet");
+	UE_LOG(LogTemp, Warning, TEXT("ASoulCharacter::ASoulCharacter() Is Used"));
 }
 
 UAbilitySystemComponent* ASoulCharacter::GetAbilitySystemComponent() const

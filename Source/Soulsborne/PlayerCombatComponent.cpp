@@ -2,7 +2,7 @@
 
 #include "PlayerCombatComponent.h"
 #include "PlayerEquipment.h"
-#include "BaseCharacter.h"
+#include "Characters/BaseCharacter.h"
 #include "SoulCharacter.h"
 #include "DynamicTakeDamage.h"
 
@@ -71,57 +71,50 @@ void UPlayerCombatComponent::DamageTrace()
 	//If the cast failed, return
 	if (Owner) {
 
-		USkeletalMeshComponent* PlayerMesh = Owner->GetMesh();
-		APlayerEquipment* PlayerWeapon = Cast<APlayerEquipment>(Weapon);
+		TArray<FHitResult> HitResults;
+		//Query for Pawn Objects
+		FCollisionObjectQueryParams NewQueryParams;
+		NewQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+		
+		//Grab the start and end trace locations for the Player Weapon
+		FVector Start = Owner->GetActorLocation();
+		FVector ForwardVector = Owner->GetActorForwardVector();
+		float SweepDistance = 200.f; // Distance to sweep forward
+		FVector End = Start + (ForwardVector * SweepDistance);
+		
+		float HalfHeight = (End - Start).Size() * 0.5f;
+		DamageTraceCollisionParams.AddIgnoredActor(GetOwner());
+		float Radius = 65.0f;
+		bool bHasHit = GetWorld()->SweepMultiByChannel(
+			HitResults,
+			Start, End,
+			FQuat::Identity,
+			ECC_Pawn,
+			FCollisionShape::MakeCapsule(Radius, HalfHeight),
+			DamageTraceCollisionParams);
 
-		//If the mesh and weapon were retreived successfully, damage trace
-		if (PlayerMesh && PlayerWeapon) {
-
-			TArray<FHitResult> HitResults;
-			//Query for Pawn Objects
-			FCollisionObjectQueryParams NewQueryParams;
-			NewQueryParams.AddObjectTypesToQuery(ECC_Pawn);
-
-			//Grab the start and end trace locations for the Player Weapon
-			FVector StartLocation = PlayerWeapon->GetStartAttackTrace()->GetComponentLocation();
-			FVector EndLocation = PlayerWeapon->GetEndAttackTrace()->GetComponentLocation();
-			float HalfHeight = (EndLocation - StartLocation).Size() * 0.5f;
-			DamageTraceCollisionParams.AddIgnoredActor(GetOwner());
-			float Radius = 35.0f;
-			bool bHasHit = GetWorld()->SweepMultiByChannel(
-				HitResults,
-				StartLocation, EndLocation,
-				FQuat::Identity,
-				ECC_Pawn,
-				FCollisionShape::MakeCapsule(Radius, HalfHeight),
-				DamageTraceCollisionParams);
-
-			DrawDebugCapsule(GetWorld(), StartLocation + (EndLocation - StartLocation) * 0.5f, HalfHeight, Radius, FQuat::Identity, FColor::Green, false, 2.0f);
-			//If we hit something(s), loop through the results and apply logic
-			if (bHasHit)
+		DrawDebugCapsule(GetWorld(), Start + (End - Start) * 0.5f, HalfHeight, Radius, FQuat::Identity, FColor::Green, false, 2.0f);
+		//If we hit something(s), loop through the results and apply logic
+		if (bHasHit)
+		{
+			TMap<AActor*, bool> AttackedActors;
+			for (const FHitResult& Result : HitResults)
 			{
-				TMap<AActor*, bool> AttackedActors;
-				for (const FHitResult& Result : HitResults)
+				ABaseCharacter* HitTarget = Cast<ABaseCharacter>(Result.GetActor());
+				//If the HitTarget is an actor, add it to the ignored actors for this DamageTracePeriod and attempt to apply damage
+
+				if (HitTarget && !HitTarget->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Abilities.Roll"))))
 				{
-					ABaseCharacter* HitTarget = Cast<ABaseCharacter>(Result.GetActor());
-					//If the HitTarget is an actor, add it to the ignored actors for this DamageTracePeriod and attempt to apply damage
-
-					if (HitTarget && !HitTarget->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Abilities.Roll"))))
-					{
-						if (!AttackedActors.Find(HitTarget)) {
-							UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *HitTarget->GetName());
-							HitTarget->printAttributes();
-							DamageTraceCollisionParams.AddIgnoredActor(HitTarget);
-							AttackedActors.Add(HitTarget, true);
-							HitTarget->printAttributes();
-							HitTarget->SoulsTakeDamage(PlayerWeapon->maxDamage, PlayerWeapon->DamageType);
-						}
+					if (!AttackedActors.Find(HitTarget)) {
+						HitTarget->printAttributes();
+						DamageTraceCollisionParams.AddIgnoredActor(HitTarget);
+						AttackedActors.Add(HitTarget, true);
+						HitTarget->printAttributes();
+						FName DamageType = "Slash";
+						HitTarget->SoulsTakeDamage(30, DamageType);
 					}
-
 				}
-				UE_LOG(LogTemp, Warning, TEXT("Hit: %i"), HitResults.Num());
 			}
-
 		}
 	}
 }
@@ -133,9 +126,8 @@ void UPlayerCombatComponent::BeginDamageTrace(AActor* RHandArmament)
 	if (!Owner) {
 		Owner = Cast<ABaseCharacter>(GetOwner());
 	}
-	Weapon = Cast<APlayerEquipment>(RHandArmament);
 	//If the weapon and Character were retreived successfully, start the Trace logic
-	if (Weapon && Owner) {
+	if (Owner) {
 		DamageTraceCollisionParams.AddIgnoredActor(GetOwner());
 		//Creates a Timer for the TracerTimerHandle that plays the DamageTrace function
 		Owner->GetWorldTimerManager().SetTimer(TraceTimerHandle, this, &UPlayerCombatComponent::DamageTrace, 0.01f, true);
@@ -148,9 +140,8 @@ void UPlayerCombatComponent::BeginDamageTrace()
 	if (!Owner) {
 		Owner = Cast<ABaseCharacter>(GetOwner());
 	}
-	Weapon = Cast<APlayerEquipment>(Owner->RHandArmament);
 	//If the weapon and Character were retreived successfully, start the Trace logic
-	if (Weapon && Owner) {
+	if (Owner) {
 		DamageTraceCollisionParams.AddIgnoredActor(GetOwner());
 		//Creates a Timer for the TracerTimerHandle that plays the DamageTrace function
 		Owner->GetWorldTimerManager().SetTimer(TraceTimerHandle, this, &UPlayerCombatComponent::DamageTrace, 0.01f, true);
@@ -204,9 +195,9 @@ void UPlayerCombatComponent::TargetLockCamera() {
 				FVector StartLocation = TransformComponent->GetComponentLocation();
 				StartLocation.Z += 50.0;
 				FVector ForwardVector = TransformComponent->GetForwardVector();
-				ForwardVector *= 1000.0f;
+				ForwardVector *= 1500.0f;
 				FVector EndLocation = ForwardVector + StartLocation;
-				float SphereRadius = 150.0f;
+				float SphereRadius = 200.0f;
 
 				//Trace for Pawns
 				TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesArray;
@@ -252,10 +243,6 @@ void UPlayerCombatComponent::TargetLockCamera() {
 						}
 					}
 				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("No Hit"));
-				}
 			}
 		}
 	}
@@ -275,7 +262,6 @@ void UPlayerCombatComponent::TakeDamage()
 		Owner->GetHealth_Implementation(health);
 		if (health <= 0) {
 			Owner->GetAbilitySystemComponent()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Character.isDead")));
-			Owner->GetMesh()->SetSimulatePhysics(true);
 			Owner->GetMesh()->GetAnimInstance()->Montage_Stop(0.0f);
 		}
 	}
@@ -300,8 +286,6 @@ void UPlayerCombatComponent::ApplyDamage(AActor* Target, float Damage) {
 					DamageModifier.ModifierMagnitude = FScalableFloat(Damage * -1);
 					TargetASC->ApplyGameplayEffectSpecToSelf(*EffectSpec);
 				}
-
-				//UE_LOG(LogTemp, Warning, TEXT("Target Health After %f"), Target->GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
 			}
 		}
 	}

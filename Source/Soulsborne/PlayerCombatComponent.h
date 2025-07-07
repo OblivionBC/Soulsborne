@@ -7,9 +7,9 @@ Child of Actor Component Class
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Characters/BaseCharacter.h"
 #include "PlayerEquipment.h"
-#include "BaseCharacter.h"
+#include "Components/ActorComponent.h"
 #include "PlayerCombatComponent.generated.h"
 
 

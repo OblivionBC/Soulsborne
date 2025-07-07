@@ -15,9 +15,6 @@ class SOULSBORNE_API ASoulCharacter : public ACharacter, public IAbilitySystemIn
 {
 	GENERATED_BODY()
 
-	//Ability System Component 
-		//This is a bridge between the Charactor and the Gameplay Ability System
-		//Gameplay ability system is a framwework for building attributes, abilities, and interactions that an actor can own and trigger
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	class UAbilitySystemComponent* AbilitySystemComponent;
 
@@ -28,9 +25,7 @@ public:
 	// Sets default values for this character's properties
 	ASoulCharacter();
 
-	//Override this to initialize the ability system component
 	UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	//Base Turn Rate, in deg/sec. Other scaling may affect final turn rate.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	float BaseTurnRate;
 

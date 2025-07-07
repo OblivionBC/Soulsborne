@@ -6,17 +6,29 @@
 #include "PlayerCombatComponent.h"
 #include "PlayerCombatInterface.h"
 #include "PlayerCombatInterface.cpp"
+#include "AbilitySystemGlobals.h"
+#include "AI/BossAIController.h"
+#include "Characters/BossCharacter.h"
+#include "Characters/SoulsPlayerCharacter.h"
+#include "Components/IBossCombatInterface.h"
 
 void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
 	if (AActor* Owner = MeshComp->GetOwner())
 	{
-		UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>();
-		if (CombatComponent)
+		if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner))
 		{
-			//BeginTrace
-			CombatComponent->BeginDamageTrace();
-			//IPlayerCombatInterface::Execute_StartDamageTrace(Owner);
+			if (Cast<ABossCharacter>(Owner))
+			{
+				FGameplayEventData EventData;
+				EventData.Instigator = Owner;
+				EventData.EventTag = EventTag;
+
+				ASC->HandleGameplayEvent(EventTag, &EventData);
+			}else if (UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>())
+			{
+				CombatComponent->BeginDamageTrace();
+			}
 		}
 	}
 }
@@ -25,12 +37,14 @@ void UAttackTraceNotify::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequen
 {
 	if (AActor* Owner = MeshComp->GetOwner())
 	{
-		UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>();
-		if (CombatComponent)
+		if (!Cast<ABossCharacter>(Owner))
 		{
-			//BeginTrace
-			CombatComponent->EndDamageTrace();
-			//IPlayerCombatInterface::Execute_EndDamageTrace(Owner);
+			if (UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>())
+			{
+				//BeginTrace
+				CombatComponent->EndDamageTrace();
+				//IPlayerCombatInterface::Execute_EndDamageTrace(Owner);
+			}
 		}
 	}
 }
