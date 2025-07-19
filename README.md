@@ -14,3 +14,12 @@ to learn from them or use similar methods if it helps! :)
 
 ## Acknowledgements
 - To implement this I used Traneks GAS documentation to learn the system, I highly reccommend it :)
+
+## Files To Add
+Some assed files were left out due to size, to have the project compile properly, the following files need to be downloaded in the following places:
+
+[Paragon Khaimera](https://www.fab.com/listings/e7c665c1-8c13-42f0-9152-0753008853d7) --> Content/ParagonKhaimera
+
+[Paragon Rampage](https://www.fab.com/listings/0807cf74-08fd-4a33-8c8d-f33c9439fb1f) --> Content/ParagonRampage
+
+[Paragon Greystone](https://www.fab.com/listings/122fd7bf-6f12-4304-a930-cccbbacdaebc) --> Content/ParagonGreystone
