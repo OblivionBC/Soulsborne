@@ -50,6 +50,7 @@ void UBossAttack::ActivateAbility(
 		return;
 	}
 	UE_LOG(LogTemp, Display, TEXT("Activating Attack"));
+	Boss->RotationComponent->StartSmoothTurnTo(PlayerTarget->GetActorLocation(), 100.0f);
 	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
 		TEXT("PlayAttack1Task"), // Unique task name
@@ -72,11 +73,6 @@ void UBossAttack::ActivateAbility(
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return; // Important: return after ending ability
-	}
-
-	if (AttackSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, Boss->GetActorLocation());
 	}
 	UAbilityTask_WaitGameplayEvent* WaitEvent = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
 		this,
@@ -148,45 +144,12 @@ void UBossAttack::StartTurnToPlayer(FOnTurnFinished OnFinishedDelegate)
     {
     	useDesiredRotation = MoveComp->bUseControllerDesiredRotation;
     	orientRotationToMovement = MoveComp->bOrientRotationToMovement;
-        MoveComp->bUseControllerDesiredRotation = false;
-        MoveComp->bOrientRotationToMovement = false;
+        //MoveComp->bUseControllerDesiredRotation = true;
+        //MoveComp->bOrientRotationToMovement = false;
     }
-    
-    // Set a timer to update rotation gradually
-    GetWorld()->GetTimerManager().SetTimer(TurnTimerHandle, [this, OnFinishedDelegate]()
-    {
-    	UE_LOG(LogTemp, Display, TEXT("In Turn Timer"));
-        if (!Boss || !PlayerTarget)
-        {
-            GetWorld()->GetTimerManager().ClearTimer(TurnTimerHandle);
-            OnFinishedDelegate.ExecuteIfBound();
-            return;
-        }
-
-        FRotator CurrentRotation = Boss->GetActorRotation();
-        FVector LookAtLocation = PlayerTarget->GetActorLocation();
-        FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(Boss->GetActorLocation(), LookAtLocation);
-
-        // Interpolate rotation
-        float DeltaTime = GetWorld()->GetDeltaSeconds();
-        FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, TurnSpeed);
-        Boss->SetActorRotation(NewRotation);
-
-        // Check if we are close enough to the target rotation
-        if (FMath::Abs(FRotator::NormalizeAxis(NewRotation.Yaw - TargetRotation.Yaw)) < 1.0f)
-        {
-            GetWorld()->GetTimerManager().ClearTimer(TurnTimerHandle);
-            
-            // Re-enable controller rotation
-            if (UCharacterMovementComponent* MoveComp = Boss->GetCharacterMovement())
-            {
-                MoveComp->bUseControllerDesiredRotation = useDesiredRotation;
-                MoveComp->bOrientRotationToMovement = orientRotationToMovement;
-            }
-
-            OnFinishedDelegate.ExecuteIfBound();
-        }
-    }, GetWorld()->GetDeltaSeconds(), true);
+	
+	Boss->RotationComponent->StartSmoothTurnTo(PlayerTarget->GetActorLocation(), 500.0f);
+	OnFinishedDelegate.ExecuteIfBound();
 }
 
 void UBossAttack::OnMontage1Completed()

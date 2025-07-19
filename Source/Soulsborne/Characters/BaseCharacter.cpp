@@ -2,14 +2,17 @@
 
 
 #include "BaseCharacter.h"
+#include "Sound/SoundAttenuation.h"
 #include "Components/ArrowComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ABaseCharacter::ABaseCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PrePhysics;
 	// Initialize the ability system component
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("AbilitySystemComponent");
 	AbilitySystemComponent->SetIsReplicated(true);
@@ -30,6 +33,30 @@ void ABaseCharacter::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) c
 
 void ABaseCharacter::OnDeath()
 {
+	bIsDead = true;
+	bIsInvulnerable = true;
+	if (Cast<USoundBase>(DeathSound))
+	{
+		USoundAttenuation * SoundAttenuation = NewObject<USoundAttenuation>();
+		SoundAttenuation->Attenuation.bAttenuate = true;
+		SoundAttenuation->Attenuation.bSpatialize = true;
+		SoundAttenuation->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
+		SoundAttenuation->Attenuation.FalloffDistance = 1000.0f;
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			Cast<USoundBase>(DeathSound),
+			GetActorLocation(),
+			GetActorRotation(),
+			1.0f,
+			1.0f,
+			0.0f,
+			SoundAttenuation
+			);
+	}
+	if (DeathMontage)
+	{
+		PlayAnimMontage(DeathMontage);
+	}
 }
 
 
@@ -89,6 +116,10 @@ void ABaseCharacter::printAttributes()
 }
 void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 {
+	if (bIsInvulnerable)
+	{
+		return;
+	}
 }
 
 void ABaseCharacter::Die()

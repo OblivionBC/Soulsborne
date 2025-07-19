@@ -5,6 +5,7 @@
 #include "../Components/BossPhaseComponent.h"
 #include "../Components/BossHudComponent.h"
 #include "Soulsborne/Components/IBossCombatInterface.h"
+#include "Soulsborne/Components/RotationComponent.h"
 #include "BossCharacter.generated.h"
 
 /**
@@ -37,6 +38,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
 	UBossHUDComponent* HUDComponent;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
+	URotationComponent* RotationComponent;
 
 	/** Enrage montage or death cinematic */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
@@ -46,7 +50,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
 	UAnimMontage* IntroMontage;
 
-	/** custom boss health bar, sounds, etc. 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|UI")
-	UBossHUDComponent* HUDComponent;*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundCue* FightMusic;
 };

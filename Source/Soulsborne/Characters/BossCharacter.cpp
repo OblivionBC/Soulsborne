@@ -5,13 +5,17 @@
 #include "../Abilities/AttackCombo.h"
 #include "../GameplayTags/SoulsGameplayTags.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Soulsborne/Abilities/BossAttack.h"
+#include "Soulsborne/Components/RotationComponent.h"
 
 ABossCharacter::ABossCharacter()
 {
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Attacks/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
 	PhaseComponent = CreateDefaultSubobject<UBossPhaseComponent>(TEXT("PhaseComponent"));
 	HUDComponent = CreateDefaultSubobject<UBossHUDComponent>(TEXT("HUDComponent"));
+	RotationComponent = CreateDefaultSubobject<URotationComponent>(TEXT("RotationComponent"));
+	PrimaryActorTick.bCanEverTick = true;
 	if (Montage.Succeeded())
 	{
 		EnrageMontage = Montage.Object.Get();
@@ -31,6 +35,7 @@ void ABossCharacter::BeginPlay()
 	GetHealth_Implementation(Health);
 	HUDComponent->Initialize(FText::FromString("Rampage"), Health);
 	BehaviorTree = LoadObject<UBehaviorTree>(nullptr, TEXT("/Game/AI/BT_BossCPP.BT_BossCPP"));
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void ABossCharacter::OnDeath()

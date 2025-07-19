@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Soulsborne/AI/BossAIController.h"
 
 UBTTask_PlayBossIntro::UBTTask_PlayBossIntro()
@@ -30,7 +31,14 @@ EBTNodeResult::Type UBTTask_PlayBossIntro::ExecuteTask(UBehaviorTreeComponent& O
 		{
 			MontageEndedDelegate.BindUObject(this, &UBTTask_PlayBossIntro::OnMontageEnded);
 			AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, BossCharacter->IntroMontage);
-
+			if (Cast<USoundBase>(BossCharacter->FightMusic))
+			UGameplayStatics::PlaySound2D(
+				GetWorld(),
+				Cast<USoundBase>(BossCharacter->FightMusic),
+				1.0f,
+				1.0f,
+				0.0f
+			);
 			return EBTNodeResult::InProgress;
 		}
 	}

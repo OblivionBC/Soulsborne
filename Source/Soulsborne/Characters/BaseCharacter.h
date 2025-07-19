@@ -77,8 +77,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bIsDead = false;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	bool bIsInvulnerable = false;
+
 	UFUNCTION(BlueprintCallable)
 	virtual void OnDeath();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UAnimMontage * DeathMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundCue* DeathSound;
 	
 	UFUNCTION(BlueprintCallable)
 	void SetMaxHealth(int NewMaxHealth);
