@@ -27,12 +27,15 @@ void ABossAIController::OnPossess(APawn* InPawn)
 			{
 				// Cache key IDs from names
 				TargetActorKey = BlackboardComp->GetKeyID("targetActor");
-				IsEnragedKey = BlackboardComp->GetKeyID("IsEnraged");
+				bIsEnragedKey = BlackboardComp->GetKeyID("bIsEnraged");
 				PhaseKey = BlackboardComp->GetKeyID("Phase");
 				HealthPercentKey = BlackboardComp->GetKeyID("HealthPercent");
 				ShouldUseAbilityKey = BlackboardComp->GetKeyID("ShouldUseAbility");
 				DistanceKey = BlackboardComp->GetKeyID("DistanceToTarget");
 				IsAttackingKey = BlackboardComp->GetKeyID("IsAttacking");
+				bCombatEngagedKey = BlackboardComp->GetKeyID("bCombatEngaged");
+				bIsPlayerDead = BlackboardComp->GetKeyID("bIsPlayerDead");
+
 
 				RunBehaviorTree(BTAsset);
 				UE_LOG(LogTemp, Display, TEXT("Behaviour Tree Started In Controller!"));
@@ -81,6 +84,7 @@ void ABossAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimul
 		{
 			SetDistanceToTarget(FVector::Dist(GetPawn()->GetActorLocation(), Actor->GetActorLocation()));
 			BlackboardComp->SetValueAsObject("targetActor", Actor);
+			AttackTarget = Actor;
 		}
 		
 	}
@@ -114,7 +118,7 @@ void ABossAIController::SetIsEnraged(bool bIsEnraged)
 {
 	if (BlackboardComp)
 	{
-		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(IsEnragedKey), bIsEnraged);
+		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(bIsEnragedKey), bIsEnraged);
 	}
 }
 
@@ -134,11 +138,36 @@ void ABossAIController::SetPhase(int32 Phase)
 	}
 }
 
+void ABossAIController::SetbIsCombatEngaged(bool engaged)
+{
+	if (BlackboardComp)
+	{
+		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(bCombatEngagedKey), engaged);
+	}
+}
+
+void ABossAIController::SetbIsPlayerDead(bool isDead)
+{
+	if (BlackboardComp)
+	{
+		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(bIsPlayerDead), isDead);
+	}
+}
+
 void ABossAIController::SetShouldUseAbility(bool bValue)
 {
 	if (BlackboardComp)
 	{
 		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(ShouldUseAbilityKey), bValue);
 	}
+}
+
+int ABossAIController::GetPhase()
+{
+	if (BlackboardComp)
+	{
+		return BlackboardComp->GetValueAsInt(BlackboardComp->GetKeyName(PhaseKey));
+	}
+	return 1;
 }
 

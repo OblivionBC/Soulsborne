@@ -14,7 +14,8 @@ class SOULSBORNE_API ABossAIController : public AAIController
 
 public:
 	ABossAIController();
-
+	UPROPERTY(BlueprintReadWrite)
+	AActor* AttackTarget;
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void BeginPlay() override;
 	UFUNCTION()
@@ -28,8 +29,11 @@ public:
 	void SetTargetActor(AActor* Target);
 	void SetIsEnraged(bool bIsEnraged);
 	void SetPhase(int32 Phase);
+	void SetbIsCombatEngaged(bool engaged);
+	void SetbIsPlayerDead(bool isDead);
 	void UpdateHealthPercent(float Percent);
 	void SetShouldUseAbility(bool bValue);
+	int GetPhase();
 
 protected:
 	UPROPERTY()
@@ -44,9 +48,11 @@ protected:
 	// Cached key IDs
 	FBlackboard::FKey TargetActorKey;
 	FBlackboard::FKey DistanceKey;
-	FBlackboard::FKey IsEnragedKey;
+	FBlackboard::FKey bIsEnragedKey;
 	FBlackboard::FKey PhaseKey;
 	FBlackboard::FKey HealthPercentKey;
 	FBlackboard::FKey ShouldUseAbilityKey;
 	FBlackboard::FKey IsAttackingKey;
+	FBlackboard::FKey bCombatEngagedKey;
+	FBlackboard::FKey bIsPlayerDead;
 };

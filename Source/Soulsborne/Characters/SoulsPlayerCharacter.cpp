@@ -23,6 +23,8 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "../GameplayTags/SoulsGameplayTags.h"
+#include "Components/ProgressBar.h"
+#include "Soulsborne/UI/PlayerHUDWidget.h"
 
 
 ///////////////////////////////////////////////////             Base Functions                ///////////////////////////////////////////////////////////////
@@ -49,32 +51,33 @@ ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 	bUseControllerRotationRoll = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
-
 	SetupStimulusSource();
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 /** Called when the game starts or when spawned */
 void ASoulsPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	StartStaminaRegen();
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		PlayerController->SetInputMode(FInputModeGameOnly());
 		if (HUDWidget)
 		{
-			PlayerHUD = CreateWidget<UUserWidget>(PlayerController, HUDWidget, "HUD");
+			PlayerHUD = CreateWidget<UPlayerHUDWidget>(PlayerController, HUDWidget, "HUD");
 			if (PlayerHUD)
 			{
 				PlayerHUD->AddToPlayerScreen();
+				PlayerHUD->UpdateHealthBar(MaxHealth, MaxHealth);
+				PlayerHUD->UpdateStaminaBar(MaxStamina, MaxStamina);
 			}
-			
-
 		}
 		//Static call for now, planning to implement based on a save file
 		FName rightSocketName = "righthandSocket";
 		AbilitySystemComponent->AddLooseGameplayTag(FSoulsGameplayTags::Get().Identity_Player);
 		AbilitySystemComponent->AddLooseGameplayTag(FSoulsGameplayTags::Get().Class_Knight);
-		
+		bIsInvulnerable = false;
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Mapping Context Found"));
@@ -149,8 +152,10 @@ void ASoulsPlayerCharacter::EndDamageTrace_Implementation() const
 
 void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) {
 	UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %f"), DamageAmount);
+	Super::SoulsTakeDamage(DamageAmount, DamageType);
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	bool isBlocking = false;
+	if (bIsInvulnerable) return;
 	if (ASC) {
 		const FGameplayTagContainer& CurrTags = ASC->GetOwnedGameplayTags();
 		for (const FGameplayTag& Tag : CurrTags)
@@ -162,20 +167,17 @@ void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType
 				break;
 			}
 		}
-		if (isBlocking)
-		{
-			//Blocking Sound
-		}else
-		{
-			//Take Damage Sound
-		}
-		UE_LOG(LogTemp, Warning, TEXT("We ARe IN THE DAMAGES IN PLAYER"));
+		
 		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
 		float NewHealth = CurrentHealth - DamageAmount;
 		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
-		UE_LOG(LogTemp, Warning, TEXT("PLAYER Health IS HEREEEEEEEE %f"), ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()));
 		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
+		if (PlayerHUD)
+		{
+			PlayerHUD->AddToPlayerScreen();
+			PlayerHUD->UpdateHealthBar(CurrentHealth, MaxHealth);
+		}
 		if (CurrentHealth <= 0 && !bIsDead)
 		{
 			Die();
@@ -207,6 +209,57 @@ void ASoulsPlayerCharacter::Die()
 	{
 		ASC->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Character.isDead")));
 	}
+}
+
+void ASoulsPlayerCharacter::StartStaminaRegen()
+{
+	if (!GetWorld()) return;
+
+	if (GetWorld()->GetTimerManager().IsTimerActive(StaminaRegenTimer))
+	{
+		return;
+	}
+	
+	GetWorld()->GetTimerManager().SetTimer(
+		StaminaRegenTimer,
+		this,
+		&ASoulsPlayerCharacter::RegenStamina,
+		StaminaRegenInterval,
+		true
+	);
+}
+
+void ASoulsPlayerCharacter::StopStaminaRegen()
+{
+	GetWorld()->GetTimerManager().ClearTimer(StaminaRegenTimer);
+}
+
+void ASoulsPlayerCharacter::RegenStamina()
+{
+	float CurrentStamina = GetAbilitySystemComponent()->GetNumericAttribute(USoulAttributeSet::GetStaminaAttribute());
+	float NewStamina = CurrentStamina + StaminaRegenRate;
+
+	if (NewStamina >= MaxStamina)
+	{
+		NewStamina = MaxStamina;
+		StopStaminaRegen(); 
+	}
+	FGameplayAttribute StamAttribute = USoulAttributeSet::GetStaminaAttribute();
+	GetAbilitySystemComponent()->SetNumericAttributeBase(StamAttribute, NewStamina);
+	if (PlayerHUD) PlayerHUD->UpdateStaminaBar(NewStamina, MaxStamina);
+}
+
+bool ASoulsPlayerCharacter::UseStamina(const float StaminaAmnt)
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	float CurrentStamina = ASC->GetNumericAttribute(USoulAttributeSet::GetStaminaAttribute());
+	if (CurrentStamina < StaminaAmnt) return false;
+	
+	FGameplayAttribute StamAttribute = USoulAttributeSet::GetStaminaAttribute();
+	float NewStam = CurrentStamina - StaminaAmnt;
+	ASC->SetNumericAttributeBase(StamAttribute, NewStam);
+	if (PlayerHUD) PlayerHUD->UpdateStaminaBar(NewStam, MaxStamina);
+	return true;
 }
 
 ///////////////////////////////////////////////////             Abilities                ///////////////////////////////////////////////////////////////////
@@ -285,6 +338,10 @@ void ASoulsPlayerCharacter::LockCamera(const FInputActionValue& Value) {
 	}
 }
 
+void ASoulsPlayerCharacter::SetHealthProgressBar(float HealthProgress)
+{
+}
+
 void ASoulsPlayerCharacter::SetupStimulusSource()
 {
 	StimulusSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("Stimulus"));
@@ -308,7 +365,6 @@ void ASoulsPlayerCharacter::BlockComplete(const FInputActionValue& Value)
 //Blueprint for now, will be migrated to Gameplay Ability Soon
 void ASoulsPlayerCharacter::Block(const FInputActionValue& Value)
 {
-
 	FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");
 	FGameplayTagContainer BlockTagContainer;
 	BlockTagContainer.AddTag(BlockTag);
@@ -320,7 +376,6 @@ void ASoulsPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 {
 	double stam;
 	ABaseCharacter::GetStamina_Implementation(stam);
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Jump"));
 	if (stam > 15.0f) {
 		FGameplayTag JumpTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Jump");
 		FGameplayTagContainer JumpTagContainer;

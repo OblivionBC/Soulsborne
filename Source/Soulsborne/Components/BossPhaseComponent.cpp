@@ -21,8 +21,10 @@ void UBossPhaseComponent::BeginPlay()
 
 void UBossPhaseComponent::SetPhase(int phase)
 {
+	UE_LOG(LogTemp, Display, TEXT("Phase %d"), phase);
 	CurrentPhase = phase;
 	OwnerBoss = Cast<ABossCharacter>(GetOwner());
+	OnPhaseChanged.Broadcast(CurrentPhase);
 	if (OwnerBoss)
 	{
 		if (ABossAIController* ai = Cast<ABossAIController>(OwnerBoss->GetController()))
@@ -38,7 +40,6 @@ void UBossPhaseComponent::CheckPhaseTransition(float HealthPercent)
 		if (HealthPercent <= PhaseThresholds[i])
 		{
 			SetPhase(i+1);
-			OnPhaseChanged.Broadcast(CurrentPhase);
 			break;
 		}
 	}

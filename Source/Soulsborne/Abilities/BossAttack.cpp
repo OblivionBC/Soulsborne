@@ -17,13 +17,6 @@ UBossAttack::UBossAttack()
 
 	AbilityTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Boss.Attack")));
 	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Boss.Attack")));
-
-
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> BossMont(TEXT("/Game/ParagonRampage/Characters/Heroes/Rampage/Animations/Attack_Biped_Melee_A_Montage1.Attack_Biped_Melee_A_Montage1"));
-	if (BossMont.Succeeded())
-	{
-		AttackMontage = BossMont.Object;
-	}
 }
 
 void UBossAttack::ActivateAbility(
@@ -36,10 +29,14 @@ void UBossAttack::ActivateAbility(
 
 	PlayerTarget = GetWorld()->GetFirstPlayerController()->GetPawn();
 	Boss = Cast<ABossCharacter>(ActorInfo->AvatarActor.Get());
-	if (!Boss || !AttackMontage)
+	if (!Boss)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
+	}
+	if (Boss->PrimaryAttackMontage)
+	{
+		AttackMontage = Boss->PrimaryAttackMontage;
 	}
 	GetAbilitySystemComponentFromActorInfo()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("State.Attacking"));
 
@@ -51,7 +48,7 @@ void UBossAttack::ActivateAbility(
 	}
 	UE_LOG(LogTemp, Display, TEXT("Activating Attack"));
 	Boss->RotationComponent->StartSmoothTurnTo(PlayerTarget->GetActorLocation(), 100.0f);
-	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+  	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
 		TEXT("PlayAttack1Task"), // Unique task name
 		AttackMontage,

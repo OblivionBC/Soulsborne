@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"	
 #include "../GameplayTags/SoulsGameplayTags.h"
 #include "Soulsborne/Characters/BossCharacter.h"
+#include "Soulsborne/Characters/SoulsPlayerCharacter.h"
 
 UAttackCombo::UAttackCombo()
 {
@@ -31,11 +32,14 @@ void UAttackCombo::OnAbilityMontageEnd(UAnimMontage* Montage, bool bInterrupted)
 
 void UAttackCombo::CheckContinueCombo(ACharacter* Character)
 {
-	ABaseCharacter* base = Cast<ABaseCharacter>(Character);
-	if (bContinueCombo || bHoldingAttack) {
+	bool hasStamina = true;
+	if (ASoulsPlayerCharacter* player = Cast<ASoulsPlayerCharacter>(Character))
+	{
+		hasStamina = player->UseStamina(10.0f);
+
+	}
+	if ((bContinueCombo || bHoldingAttack) && hasStamina) {
 		bContinueCombo = false;
-		UE_LOG(LogTemp, Display, TEXT("ContinueCombo In AttackCombo.cpp"));
-		
 	}
 	else {
 		if (Character) {
@@ -52,11 +56,14 @@ void UAttackCombo::CheckContinueCombo(ACharacter* Character)
 void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	AActor* Avatar = ActorInfo->AvatarActor.Get();
-	UE_LOG(LogTemp, Log, TEXT("In ChooseMontage: %s"), *Avatar->GetActorNameOrLabel());
 	ChooseMontage(Avatar);
 	
-	UE_LOG(LogTemp, Display, TEXT("AttackCombo.cpp ACTIVATED"));
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	if (ASoulsPlayerCharacter* player = Cast<ASoulsPlayerCharacter>(Avatar))
+	{
+		if (!player->UseStamina(5.0f)) EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		player->StopStaminaRegen();
+	}
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
@@ -88,6 +95,10 @@ void UAttackCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 	{
 		AnimInstance->OnMontageEnded.Clear();
 		AbilityMontageEnded.Unbind();
+	}
+	if (ASoulsPlayerCharacter *player = Cast<ASoulsPlayerCharacter>(Character))
+	{
+		player->StartStaminaRegen();
 	}
 }
 

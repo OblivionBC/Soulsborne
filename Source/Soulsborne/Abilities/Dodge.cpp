@@ -8,7 +8,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 #include "../Characters/SoulsPlayerCharacter.h"
-#include "../MovementDirectionENum.h"
+#include "../ENUM/MovementDirectionENum.h"
 
 UDodge::UDodge()
 {
@@ -56,10 +56,22 @@ void UDodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo) && ASC)
 	{
+		if (ASoulsPlayerCharacter *player = Cast<ASoulsPlayerCharacter>(ActorInfo->OwnerActor))
+		{
+			if (!player->UseStamina(15.0f))
+			{
+				EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+				return;
+			}
+			player->StopStaminaRegen();
+		}
 		ABaseCharacter* Owner = Cast<ABaseCharacter>(ActorInfo->OwnerActor);
 		if (Owner)
 		{
 			Dodge(Owner);
+			Owner->bIsInvulnerable = true;
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("INVULNERABLE"));
+			
 		}
 	}
 }
@@ -119,13 +131,20 @@ void UDodge::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplay
 {
 	if (ActorInfo->AvatarActor.IsValid())
 	{
-		ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
+		ABaseCharacter* Character = Cast<ABaseCharacter>(ActorInfo->AvatarActor.Get());
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("NOT INVULNERABLE"));
+
+		Character->bIsInvulnerable = false;
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (Character && ASC && AnimInstance)
 		{
 			AnimInstance->OnMontageEnded.Clear();
 			AbilityMontageEnded.Unbind();
+		}
+		if (ASoulsPlayerCharacter *player = Cast<ASoulsPlayerCharacter>(Character))
+		{
+			player->StartStaminaRegen();
 		}
 	}
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

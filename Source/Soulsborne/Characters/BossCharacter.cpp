@@ -2,24 +2,26 @@
 
 #include "AIController.h"
 #include "SoulsPlayerCharacter.h"
-#include "../Abilities/AttackCombo.h"
 #include "../GameplayTags/SoulsGameplayTags.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Soulsborne/Abilities/BossAttack.h"
+#include "Animation/PoseSnapshot.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Animation/AnimInstance.h"
+#include "Soulsborne/Abilities/BossRockThrow.h"
+#include "Soulsborne/AI/BossAIController.h"
+#include "Soulsborne/Animations/BossAnimInstance.h"
 #include "Soulsborne/Components/RotationComponent.h"
 
 ABossCharacter::ABossCharacter()
 {
-	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Attacks/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
 	PhaseComponent = CreateDefaultSubobject<UBossPhaseComponent>(TEXT("PhaseComponent"));
 	HUDComponent = CreateDefaultSubobject<UBossHUDComponent>(TEXT("HUDComponent"));
 	RotationComponent = CreateDefaultSubobject<URotationComponent>(TEXT("RotationComponent"));
 	PrimaryActorTick.bCanEverTick = true;
-	if (Montage.Succeeded())
-	{
-		EnrageMontage = Montage.Object.Get();
-	}
 	if (PhaseComponent)
 	{
 		PhaseComponent->OnPhaseChanged.AddDynamic(this, &ABossCharacter::HandlePhaseChange);
@@ -35,7 +37,14 @@ void ABossCharacter::BeginPlay()
 	GetHealth_Implementation(Health);
 	HUDComponent->Initialize(FText::FromString("Rampage"), Health);
 	BehaviorTree = LoadObject<UBehaviorTree>(nullptr, TEXT("/Game/AI/BT_BossCPP.BT_BossCPP"));
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	if (ABossAIController* controller = Cast<ABossAIController>(GetController()))
+	{
+		BossAIController = controller;
+		controller->SetbIsCombatEngaged(false);
+	}
+	bIsInvulnerable = true;
 }
 
 void ABossCharacter::OnDeath()
@@ -51,35 +60,59 @@ void ABossCharacter::GiveDefaultAbilities()
 	{
 		//C++ Implemented Abilities
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossAttack::StaticClass(), 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossRockThrow::StaticClass(), 1, 0));
 	}
 }
 
 void ABossCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 {
 	Super::SoulsTakeDamage(DamageAmount, DamageType);
+	if (bIsInvulnerable)
+	{
+		return;
+	}
 	double Health = 0.0;
 	UE_LOG(LogTemp, Display, TEXT("DamageAmount: %f"), DamageAmount);
 	GetHealth_Implementation(Health);
 	float HealthPercent = Health / this->MaxHealth;
 	PhaseComponent->CheckPhaseTransition(HealthPercent);
 	HUDComponent->UpdateHealth(Health);
-
 }
 
 void ABossCharacter::OnPlayerKilledHandler(AActor* KilledPlayer)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Enemy AI detected player was killed!"));
-	this->GetMesh()->SetSimulatePhysics(true);
+	GetCharacterMovement()->StopMovementImmediately();
+	
+	if (ABossAIController* controller = Cast<ABossAIController>(GetController()))
+	{
+		controller->SetbIsPlayerDead(true);
+	}
+	
 }
-
 
 void ABossCharacter::HandlePhaseChange(int32 NewPhase)
 {
-	// Play enrage montage or apply gameplay effect
+	
 	UE_LOG(LogTemp, Display, TEXT("PhaseChange: %d"), NewPhase);
-	if (NewPhase == 1 && EnrageMontage)
+	if (ABossAIController* ai = Cast<ABossAIController>(this->GetController()))
 	{
-		PlayAnimMontage(EnrageMontage);
+		ai->SetbIsCombatEngaged(false);
+	}
+	UBossAnimInstance* AnimInst = Cast<UBossAnimInstance>(this->GetMesh()->GetAnimInstance());
+	if (NewPhase == 1)
+	{
+		if (AnimInst)
+		{
+			AnimInst->BossPhase = EBossPhase::Phase1;
+		}
+	}
+	if (NewPhase == 2)
+	{
+		if (AnimInst)
+		{
+			AnimInst->BossPhase = EBossPhase::Phase2;
+		}
 	}
 }
 
@@ -156,4 +189,22 @@ void ABossCharacter::TraceForAttack(FGameplayTag AttackTag)
 	{
 		PerformBasicAttack();
 	}
+}
+
+void ABossCharacter::ChangeMesh(USkeletalMesh* NewMesh)
+{
+	if (!NewMesh || !GetMesh()) return;
+
+	USkeletalMeshComponent* MeshComp = GetMesh();
+
+	if (!MeshComp->SkeletalMesh || MeshComp->SkeletalMesh->GetSkeleton() != NewMesh->GetSkeleton())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Skeleton mismatch, cannot swap mesh."));
+		return;
+	}
+
+	// Set the new mesh but keep the current AnimInstance
+	MeshComp->SetSkeletalMeshAsset(NewMesh); // false = do NOT reinitialize the anim instance
+
+	UE_LOG(LogTemp, Log, TEXT("Skeletal mesh swapped and animation preserved."));
 }

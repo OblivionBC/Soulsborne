@@ -11,13 +11,18 @@
 #include "Characters/BossCharacter.h"
 #include "Characters/SoulsPlayerCharacter.h"
 #include "Components/IBossCombatInterface.h"
+#include "Kismet/GameplayStatics.h"
 
 void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
-	if (AActor* Owner = MeshComp->GetOwner())
+	if (ABaseCharacter* Owner = Cast<ABaseCharacter>(MeshComp->GetOwner()))
 	{
 		if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner))
 		{
+			if (USoundBase * AttackSound = Owner->BaseAttackSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(Owner, AttackSound, Owner->GetActorLocation());
+			}
 			if (Cast<ABossCharacter>(Owner))
 			{
 				FGameplayEventData EventData;

@@ -2,8 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "NonPlayerCharacter.h"
+#include "Projectile.h"
 #include "../Components/BossPhaseComponent.h"
 #include "../Components/BossHudComponent.h"
+#include "Soulsborne/AI/BossAIController.h"
 #include "Soulsborne/Components/IBossCombatInterface.h"
 #include "Soulsborne/Components/RotationComponent.h"
 #include "BossCharacter.generated.h"
@@ -30,8 +32,11 @@ protected:
 	virtual void PerformBasicAttack() override;
 	virtual void PerformPhaseAbility(int32 Phase) override;
 	virtual void TraceForAttack(FGameplayTag AttackTag) override;
+	ABossAIController* BossAIController;
 
 public:
+	UFUNCTION()
+	void ChangeMesh(USkeletalMesh* NewMesh);
 	/** Phase system */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
 	UBossPhaseComponent* PhaseComponent;
@@ -49,7 +54,16 @@ public:
 	/** Intro montage (cutscene or intro roar) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
 	UAnimMontage* IntroMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
+	UAnimMontage* EmoteMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
+	UAnimMontage* RipNTossMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* FightMusic;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundCue* FightMusic;
+	TSubclassOf<AProjectile> RockProjectile;
 };

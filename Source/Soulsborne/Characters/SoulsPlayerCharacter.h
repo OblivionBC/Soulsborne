@@ -18,6 +18,8 @@
 #include "../UI/ProgressBarInterface.h"
 #include "../PlayerCombatInterface.h"
 #include "../SoulAttributeSet.h"
+#include "Components/ProgressBar.h"
+#include "Soulsborne/UI/PlayerHUDWidget.h"
 #include "SoulsPlayerCharacter.generated.h"
 
 /**
@@ -43,6 +45,7 @@ protected:
 	virtual void InitializeAttributes();
 	virtual void Die() override;
 	
+
 	/* Player Combat Interface Functions*/
 	virtual void StartDamageTrace_Implementation() const override;
 	virtual void EndDamageTrace_Implementation() const override;
@@ -71,7 +74,10 @@ protected:
 	/**	----------------------------------- Properties ------------------------------------ **/
 public:
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
-
+	void StartStaminaRegen();
+	void StopStaminaRegen();
+	void RegenStamina();
+	bool UseStamina(const float StaminaAmnt);
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	class UPlayerCombatComponent* PlayerCombatComponent;
 	
@@ -90,25 +96,28 @@ public:
 	UAnimMontage* HitMontage;
 protected:
 
+	bool bCanRegenStamina = true;
+	FTimerHandle StaminaRegenTimer;
+	float StaminaRegenRate = 0.5f;
+	float StaminaRegenInterval = 0.05f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayEffect> RechargeStaminaEffect;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
-	TSubclassOf<UGameplayEffect> UseStamina;
-
+	
 	/* UI */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	UUserWidget* PlayerHUD;
+	UPlayerHUDWidget* PlayerHUD;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UUserWidget> HUDWidget;
+	TSubclassOf<UPlayerHUDWidget> HUDWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	UProgressBar* HealthBar;
+	
+	void SetHealthProgressBar(float HealthProgress);
 	/* Input */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* MyInputMappingContext;
 
 	class UAIPerceptionStimuliSourceComponent* StimulusSource;
 	void SetupStimulusSource();
-
-
 };

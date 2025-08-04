@@ -74,7 +74,9 @@ void ANonPlayerCharacter::OnRep_PlayerState()
 	printAttributes();
 }
 void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) {
+	Super::SoulsTakeDamage(DamageAmount, DamageType);
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (bIsInvulnerable) return;
 	if (ASC) {
 		/// Here can calculate the damage based on the damage type, for now we just do the damage amount
 		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());

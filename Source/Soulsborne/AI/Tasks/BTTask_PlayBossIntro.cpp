@@ -1,5 +1,5 @@
 
-#include "BT_Task_PlayBossIntro.h"
+#include "BTTask_PlayBossIntro.h"
 
 #include "AIController.h"
 #include "../../Characters/BossCharacter.h"
@@ -31,13 +31,10 @@ EBTNodeResult::Type UBTTask_PlayBossIntro::ExecuteTask(UBehaviorTreeComponent& O
 		{
 			MontageEndedDelegate.BindUObject(this, &UBTTask_PlayBossIntro::OnMontageEnded);
 			AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, BossCharacter->IntroMontage);
-			if (Cast<USoundBase>(BossCharacter->FightMusic))
-			UGameplayStatics::PlaySound2D(
-				GetWorld(),
-				Cast<USoundBase>(BossCharacter->FightMusic),
-				1.0f,
-				1.0f,
-				0.0f
+			if (BossCharacter->FightMusic)
+				UGameplayStatics::PlaySound2D(
+					BossCharacter,
+					BossCharacter->FightMusic
 			);
 			return EBTNodeResult::InProgress;
 		}
@@ -51,9 +48,14 @@ void UBTTask_PlayBossIntro::OnMontageEnded(UAnimMontage* Montage, bool bInterrup
 	if (BossCharacter && BossCharacter->HUDComponent)
 	{
 		BossCharacter->HUDComponent->SetBossHudVisible(true);
-		if (UBossPhaseComponent* cp = Cast<UBossPhaseComponent>(BossCharacter->GetComponentByClass(UBossPhaseComponent::StaticClass())))
+		if (UBossPhaseComponent* cp = BossCharacter->PhaseComponent)
 		{
 			cp->SetPhase(1);
+			if (ABossAIController* controller = Cast<ABossAIController>(BossCharacter->GetController()))
+			{
+				controller->SetbIsCombatEngaged(true);
+				BossCharacter->bIsInvulnerable = false;
+			}
 		}
 
 	}

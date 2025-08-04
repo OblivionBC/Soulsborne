@@ -19,6 +19,7 @@
 #include "DrawDebugHelpers.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/CameraComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
 // Sets default values for this component's properties
@@ -105,7 +106,8 @@ void UPlayerCombatComponent::DamageTrace()
 
 				if (HitTarget && !HitTarget->GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player.Abilities.Roll"))))
 				{
-					if (!AttackedActors.Find(HitTarget)) {
+					if (!AttackedActors.Find(HitTarget))
+					{
 						HitTarget->printAttributes();
 						DamageTraceCollisionParams.AddIgnoredActor(HitTarget);
 						AttackedActors.Add(HitTarget, true);

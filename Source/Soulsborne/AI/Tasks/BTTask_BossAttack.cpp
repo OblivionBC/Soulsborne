@@ -62,7 +62,7 @@ void UBTTask_PerformAttack::OnAbilityEnded(UGameplayAbility* Ability)
 		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
 		if (ABossAIController * ai = Cast<ABossAIController>(BossCharacter->GetController()))
 		{
-			ai->SetIsAttacking(true);
+			ai->SetIsAttacking(false);
 		}
 	}
 }

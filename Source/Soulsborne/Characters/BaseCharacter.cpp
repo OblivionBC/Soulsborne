@@ -35,7 +35,7 @@ void ABaseCharacter::OnDeath()
 {
 	bIsDead = true;
 	bIsInvulnerable = true;
-	if (Cast<USoundBase>(DeathSound))
+	if (DeathSound)
 	{
 		USoundAttenuation * SoundAttenuation = NewObject<USoundAttenuation>();
 		SoundAttenuation->Attenuation.bAttenuate = true;
@@ -44,7 +44,7 @@ void ABaseCharacter::OnDeath()
 		SoundAttenuation->Attenuation.FalloffDistance = 1000.0f;
 		UGameplayStatics::PlaySoundAtLocation(
 			GetWorld(),
-			Cast<USoundBase>(DeathSound),
+			DeathSound,
 			GetActorLocation(),
 			GetActorRotation(),
 			1.0f,
@@ -120,6 +120,20 @@ void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 	{
 		return;
 	}
+	if (this->DamagedFX){
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			this->DamagedFX,
+			this->GetActorLocation(),
+			this->GetActorRotation(),
+			true
+			);
+	}
+	if (this->AttackedSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+		this, this->AttackedSound, this->GetActorLocation());
+	}
 }
 
 void ABaseCharacter::Die()
@@ -175,6 +189,8 @@ void ABaseCharacter::GetManaAsRatio_Implementation(double& Result) const {
 }
 
 void ABaseCharacter::GetHealthAsRatio_Implementation(double& Result) const {
+	UE_LOG(LogTemp, Warning, TEXT("Actor Name: %s"), *this->GetName());
+
 	if (AbilitySystemComponent) {
 		Result = AbilitySystemComponent->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) / MaxHealth;
 	}

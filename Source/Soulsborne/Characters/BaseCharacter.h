@@ -73,6 +73,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UArrowComponent* AttackArrow;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	USoundBase* BaseAttackSound = nullptr;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	USoundBase* BaseAttackEffortSound = nullptr;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bIsDead = false;
@@ -87,7 +93,13 @@ public:
 	UAnimMontage * DeathMontage;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundCue* DeathSound;
+	USoundBase* DeathSound;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* AttackedSound;
+	
+	UPROPERTY(EditAnywhere, Category = "VFX")
+	UParticleSystem* DamagedFX;
 	
 	UFUNCTION(BlueprintCallable)
 	void SetMaxHealth(int NewMaxHealth);
@@ -101,5 +113,5 @@ public:
 	int MaxMana = 100;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-	int MaxStat = 99;
+	int MaxStat = 200;
 };

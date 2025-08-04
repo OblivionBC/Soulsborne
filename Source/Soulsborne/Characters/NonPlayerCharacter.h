@@ -23,6 +23,10 @@ public:
 	ANonPlayerCharacter();
 	UFUNCTION()
 	UBehaviorTree* GetBehaviorTree();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+	UAnimMontage* PrimaryAttackMontage;
+	
 protected:
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
 	UFUNCTION()
@@ -39,9 +43,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	UPlayerCombatComponent* CombatComponent;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
 	UAnimMontage* HitMontage;
-
+	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "AI", meta = (AllowPrivateAccess = "true"))
 	UBehaviorTree* BehaviorTree;
 

@@ -3,6 +3,7 @@
 #include "GameFramework/Character.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Soulsborne/Components/RotationComponent.h"
 
 UBTTask_ChasePlayer::UBTTask_ChasePlayer(const FObjectInitializer& ObjectInitializer)
 {
@@ -19,7 +20,7 @@ EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& Own
 	AIPawn = AIController->GetPawn();
 	if (!AIPawn)
 		return EBTNodeResult::Failed;
-
+	
 	UBlackboardComponent* Blackboard = OwnerComp.GetBlackboardComponent();
 	if (!Blackboard)
 		return EBTNodeResult::Failed;
@@ -27,7 +28,10 @@ EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& Own
 	TargetActor = Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKey.SelectedKeyName));
 	if (!TargetActor)
 		return EBTNodeResult::Failed;
-
+	
+	RotComp = Cast<URotationComponent>(AIPawn->GetComponentByClass(URotationComponent::StaticClass()));
+	if (RotComp) RotComp->LockOnTarget(TargetActor, 300.0f);
+	
 	AIController->MoveToActor(TargetActor, AcceptableDistance);
 	return EBTNodeResult::InProgress;
 }
@@ -40,18 +44,23 @@ void UBTTask_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}
-	
-	float Distance = FVector::Dist(TargetActor->GetActorLocation(), AIPawn->GetActorLocation());
-	if (Distance <= AcceptableDistance)
+	auto* BB = OwnerComp.GetBlackboardComponent();
+	if (BB)
 	{
-		AIController->StopMovement();
-		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-	}else
-	{
-		AIController->MoveToActor(TargetActor, AcceptableDistance);
+		float AdjustedDistance = BB->GetValueAsFloat(DistanceKey.SelectedKeyName);
+		if (AdjustedDistance <= AcceptableDistance)
+		{
+			if (RotComp) RotComp->StopLockOn();
+			AIController->StopMovement();
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		}else
+		{
+			AIController->MoveToActor(TargetActor, AcceptableDistance);
+		}
 	}
 }
 
 void UBTTask_ChasePlayer::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
 {
+	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 }

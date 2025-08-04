@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "BT_Task_PlayBossIntro.generated.h"
+#include "BTTask_PlayTwoIntro.generated.h"
 
 UCLASS()
-class SOULSBORNE_API UBTTask_PlayBossIntro : public UBTTaskNode
+class SOULSBORNE_API UBTTask_PlayTwoIntro : public UBTTaskNode
 {
 	GENERATED_BODY()
 
 public:
-	UBTTask_PlayBossIntro();
+	UBTTask_PlayTwoIntro();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 protected:
