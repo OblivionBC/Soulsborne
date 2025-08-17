@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "Perception/AISense.h"
+#include "Soulsborne/Characters/SoulsPlayerCharacter.h"
 #include "EnemyAIController.generated.h"
 
 /**
@@ -20,7 +21,8 @@ public:
 
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	ASoulsPlayerCharacter* AttackTarget;
 private:
 	class UAISenseConfig_Sight* SightConfig;
 

@@ -20,7 +20,6 @@ ABossCharacter::ABossCharacter()
 {
 	PhaseComponent = CreateDefaultSubobject<UBossPhaseComponent>(TEXT("PhaseComponent"));
 	HUDComponent = CreateDefaultSubobject<UBossHUDComponent>(TEXT("HUDComponent"));
-	RotationComponent = CreateDefaultSubobject<URotationComponent>(TEXT("RotationComponent"));
 	PrimaryActorTick.bCanEverTick = true;
 	if (PhaseComponent)
 	{

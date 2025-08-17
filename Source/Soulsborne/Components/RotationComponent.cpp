@@ -130,7 +130,7 @@ void URotationComponent::StopLockOn()
 void URotationComponent::LockOnTarget(AActor* NewTargetActor, float InRotationSpeed)
 {
 	ACharacter * owner = Cast<ACharacter>(GetOwner());
-	if (ABossAIController* controller = Cast<ABossAIController>(owner->GetController()))
+	if (AAIController* controller = Cast<AAIController>(owner->GetController()))
 	{
 		controller->SetFocus(NewTargetActor, EAIFocusPriority::Gameplay);
 	}

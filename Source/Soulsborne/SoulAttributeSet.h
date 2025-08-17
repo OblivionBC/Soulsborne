@@ -11,7 +11,6 @@
 	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName)
-	//GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 UCLASS()
 class SOULSBORNE_API USoulAttributeSet : public UAttributeSet
 {
@@ -23,70 +22,70 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Health)
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Health);
 
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Mana)
 	FGameplayAttributeData Mana;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Mana);
 
 	UFUNCTION()
 	virtual void OnRep_Mana(const FGameplayAttributeData& OldMana);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Stamina)
 	FGameplayAttributeData Stamina;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Stamina);
 
 	UFUNCTION()
 	virtual void OnRep_Stamina(const FGameplayAttributeData& OldStamina);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Vigor)
 	FGameplayAttributeData Vigor;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Vigor);
 
 	UFUNCTION()
 	virtual void OnRep_Vigor(const FGameplayAttributeData& OldVigor);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Mind)
 	FGameplayAttributeData Mind;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Mind);
 
 	UFUNCTION()
 	virtual void OnRep_Mind(const FGameplayAttributeData& OldMind);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Endurance)
 	FGameplayAttributeData Endurance;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Endurance);
 
 	UFUNCTION()
 	virtual void OnRep_Endurance(const FGameplayAttributeData& OldEndurance);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Dexterity)
 	FGameplayAttributeData Dexterity;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Dexterity);
 
 	UFUNCTION()
 	virtual void OnRep_Dexterity(const FGameplayAttributeData& OldDexterity);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Intelligence)
 	FGameplayAttributeData Intelligence;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Intelligence);
 
 	UFUNCTION()
 	virtual void OnRep_Intelligence(const FGameplayAttributeData& OldIntelligence);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Faith)
 	FGameplayAttributeData Faith;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Faith);
 
 	UFUNCTION()
 	virtual void OnRep_Faith(const FGameplayAttributeData& OldFaith);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Luck)
 	FGameplayAttributeData Luck;
 	ATTRIBUTE_ACCESSOR(USoulAttributeSet, Luck);
 

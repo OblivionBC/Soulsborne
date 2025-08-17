@@ -52,6 +52,8 @@ void AEnemyAIController::SetupPerceptionSystem()
 void AEnemyAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
 	if (auto* const character = Cast<ASoulsPlayerCharacter>(Actor)) {
-		GetBlackboardComponent()->SetValueAsBool("CanSeePlayer", Stimulus.WasSuccessfullySensed());
+		GetBlackboardComponent()->SetValueAsBool("bSeeingTarget", Stimulus.WasSuccessfullySensed());
+		GetBlackboardComponent()->SetValueAsObject("targetActor", character);
+		AttackTarget = character;
 	}
 }

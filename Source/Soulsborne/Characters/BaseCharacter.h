@@ -89,8 +89,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void OnDeath();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage * DeathMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage * Ability1Mont;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USoundBase* DeathSound;

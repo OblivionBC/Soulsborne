@@ -13,12 +13,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "../GameplayTags/SoulsGameplayTags.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Soulsborne/Components/RotationComponent.h"
 
 /** ----------------------- Base Functions ---------------------- **/
 /** Sets default values */
 ANonPlayerCharacter::ANonPlayerCharacter()
 {
-	//Initialize Combat Component
+	RotationComponent = CreateDefaultSubobject<URotationComponent>(TEXT("RotationComponent"));
 	CombatComponent = CreateDefaultSubobject< UPlayerCombatComponent>("PlayerCombatComponent");
 	if (!Attributes) {
 		Attributes = CreateDefaultSubobject<USoulAttributeSet>("AttributesSet");

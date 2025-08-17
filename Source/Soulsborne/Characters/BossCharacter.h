@@ -7,7 +7,6 @@
 #include "../Components/BossHudComponent.h"
 #include "Soulsborne/AI/BossAIController.h"
 #include "Soulsborne/Components/IBossCombatInterface.h"
-#include "Soulsborne/Components/RotationComponent.h"
 #include "BossCharacter.generated.h"
 
 /**
@@ -15,8 +14,7 @@
  */
 UCLASS()
 class SOULSBORNE_API ABossCharacter : public ANonPlayerCharacter, public IBossCombatInterface
-{
-	GENERATED_BODY()
+{	GENERATED_BODY()
 
 public:
 	ABossCharacter();
@@ -43,9 +41,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
 	UBossHUDComponent* HUDComponent;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
-	URotationComponent* RotationComponent;
 
 	/** Enrage montage or death cinematic */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")

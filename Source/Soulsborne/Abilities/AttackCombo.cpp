@@ -5,6 +5,7 @@
 #include "../PlayerCombatComponent.h"
 #include "AbilitySystemComponent.h"	
 #include "../GameplayTags/SoulsGameplayTags.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Soulsborne/Characters/BossCharacter.h"
 #include "Soulsborne/Characters/SoulsPlayerCharacter.h"
 
@@ -64,6 +65,10 @@ void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		if (!player->UseStamina(5.0f)) EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		player->StopStaminaRegen();
 	}
+	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(Avatar->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
+	{
+		movement->DisableMovement();
+	};
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
@@ -96,6 +101,10 @@ void UAttackCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 		AnimInstance->OnMontageEnded.Clear();
 		AbilityMontageEnded.Unbind();
 	}
+	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(Character->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
+	{
+		movement->SetMovementMode(MOVE_Walking);
+	};
 	if (ASoulsPlayerCharacter *player = Cast<ASoulsPlayerCharacter>(Character))
 	{
 		player->StartStaminaRegen();
@@ -152,21 +161,9 @@ void UAttackCombo::ChooseMontage(AActor* Avatar)
 	FGameplayTagContainer Tags;
 	if (ABaseCharacter* character = Cast<ABaseCharacter>(Avatar))
 	{
-		UE_LOG(LogTemp, Display, TEXT("They are base"));
-		UAbilitySystemComponent* ASC = character->GetAbilitySystemComponent();
-		for (FGameplayTag tag : ASC->GetOwnedGameplayTags())
+		if (character->Ability1Mont)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Tag Name: %s"), *tag.GetTagName().ToString());
-		}
-		
-		if (ASC->HasMatchingGameplayTag(FSoulsGameplayTags::Get().Class_Knight))
-		{
-			UE_LOG(LogTemp, Log, TEXT("Knight class detected."));
-			MontageToPlay = DefaultMontage;
-		}else
-		{
-			UE_LOG(LogTemp, Display, TEXT("Other class detected."));
-			MontageToPlay = DefaultMontage;
+			MontageToPlay = character->Ability1Mont;
 		}
 	}
 	else
