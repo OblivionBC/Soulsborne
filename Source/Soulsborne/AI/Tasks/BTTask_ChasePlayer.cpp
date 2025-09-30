@@ -2,6 +2,7 @@
 #include "AIController.h"
 #include "GameFramework/Character.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Soulsborne/Components/RotationComponent.h"
 
@@ -31,6 +32,11 @@ EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& Own
 	
 	RotComp = Cast<URotationComponent>(AIPawn->GetComponentByClass(URotationComponent::StaticClass()));
 	if (RotComp) RotComp->LockOnTarget(TargetActor, 300.0f);
+
+	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(AIPawn->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
+	{
+		movement->SetMovementMode(EMovementMode::MOVE_Walking);
+	};
 	
 	AIController->MoveToActor(TargetActor, AcceptableDistance);
 	return EBTNodeResult::InProgress;
@@ -48,7 +54,7 @@ void UBTTask_ChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	if (BB)
 	{
 		float AdjustedDistance = BB->GetValueAsFloat(DistanceKey.SelectedKeyName);
-		if (AdjustedDistance <= AcceptableDistance)
+		if (AdjustedDistance <= AcceptableDistance + 25)
 		{
 			if (RotComp) RotComp->StopLockOn();
 			AIController->StopMovement();

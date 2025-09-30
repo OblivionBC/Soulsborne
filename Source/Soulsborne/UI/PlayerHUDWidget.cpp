@@ -18,3 +18,8 @@ void UPlayerHUDWidget::UpdateStaminaBar(float CurrentStamina, float MaxStamina)
 		StaminaBar->UpdateProgress(Percent);
 	}
 }
+
+UInventoryWidget* UPlayerHUDWidget::GetInventoryWidget() const
+{
+	return Inventory;
+}

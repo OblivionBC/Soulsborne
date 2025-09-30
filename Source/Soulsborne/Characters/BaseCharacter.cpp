@@ -136,6 +136,18 @@ void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 	}
 }
 
+void ABaseCharacter::SoulsHeal(float HealAmount)
+{
+	if (AbilitySystemComponent) {
+	
+		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
+		float CurrentHealth = AbilitySystemComponent->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
+        float NewHealth = FMath::Min(MaxHealth, CurrentHealth + HealAmount);
+        AbilitySystemComponent->SetNumericAttributeBase(HealthAttribute, NewHealth);
+	}
+	
+}
+
 void ABaseCharacter::Die()
 {
 }

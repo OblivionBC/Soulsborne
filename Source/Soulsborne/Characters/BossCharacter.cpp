@@ -11,6 +11,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimInstance.h"
+#include "Soulsborne/Abilities/BossLeap.h"
 #include "Soulsborne/Abilities/BossRockThrow.h"
 #include "Soulsborne/AI/BossAIController.h"
 #include "Soulsborne/Animations/BossAnimInstance.h"
@@ -60,6 +61,7 @@ void ABossCharacter::GiveDefaultAbilities()
 		//C++ Implemented Abilities
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossAttack::StaticClass(), 1, 0));
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossRockThrow::StaticClass(), 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossLeap::StaticClass(), 1, 0));
 	}
 }
 

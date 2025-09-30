@@ -113,9 +113,9 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 	RadialForce->FireImpulse();
 	if (bHit)
 	{
-		for (const FHitResult& Hit : HitResults)
+		for (const FHitResult& HitResult : HitResults)
 		{
-			AActor* HitActor = Hit.GetActor();
+			AActor* HitActor = HitResult.GetActor();
 			ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
 			if (!Character)
 				continue;

@@ -82,6 +82,7 @@ protected:
 	AActor* PlayerTarget;
 	FTimerHandle TurnTimerHandle;
 
+	bool bIsThrown = false;
 	bool bIsStrafing = false;
 	bool bIsInAnimation = false;
 };

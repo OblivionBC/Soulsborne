@@ -3,11 +3,11 @@
 
 #include "SoulsPlayerCharacter.h"
 
-#include "../SoulAttributeSet.h"	
+#include "../SoulAttributeSet.h"
 #include "../Abilities/Dodge.h"
 #include "../Abilities/AttackCombo.h"
 
-#include "AbilitySystemComponent.h"	
+#include "AbilitySystemComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagsModule.h"
@@ -32,7 +32,7 @@
 ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 {
 	//Initialize Combat Component
-	PlayerCombatComponent = CreateDefaultSubobject< UPlayerCombatComponent>("PlayerCombatComponent");
+	PlayerCombatComponent = CreateDefaultSubobject<UPlayerCombatComponent>("PlayerCombatComponent");
 
 	//Initialize Camera
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -45,6 +45,8 @@ ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName); // Attach the camera to the end of the boom
 	Camera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	NewSword = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NewSwordMesh"));
+	NewSword->SetupAttachment(GetMesh(), TEXT("hand_r"));
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -53,6 +55,7 @@ ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	SetupStimulusSource();
 	PrimaryActorTick.bCanEverTick = true;
+	DrinkEnded.BindUObject(this, &ASoulsPlayerCharacter::DrinkEndedFunction);
 }
 
 /** Called when the game starts or when spawned */
@@ -74,11 +77,12 @@ void ASoulsPlayerCharacter::BeginPlay()
 			}
 		}
 		//Static call for now, planning to implement based on a save file
-		FName rightSocketName = "righthandSocket";
+
 		AbilitySystemComponent->AddLooseGameplayTag(FSoulsGameplayTags::Get().Identity_Player);
 		AbilitySystemComponent->AddLooseGameplayTag(FSoulsGameplayTags::Get().Class_Knight);
 		bIsInvulnerable = false;
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<
+			UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Mapping Context Found"));
 			Subsystem->AddMappingContext(MyInputMappingContext, 1);
@@ -98,7 +102,8 @@ void ASoulsPlayerCharacter::PossessedBy(AController* NewController)
 	// Call the base class version
 	Super::PossessedBy(NewController);
 
-	if (AbilitySystemComponent) {
+	if (AbilitySystemComponent)
+	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 	// Initialize the attributes and give default abilities
@@ -113,7 +118,8 @@ void ASoulsPlayerCharacter::OnRep_PlayerState()
 	// Call the base class version
 	Super::OnRep_PlayerState();
 
-	if (AbilitySystemComponent) {
+	if (AbilitySystemComponent)
+	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 	// Initialize the attributes and give default abilities
@@ -150,13 +156,15 @@ void ASoulsPlayerCharacter::EndDamageTrace_Implementation() const
 	}
 }
 
-void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) {
+void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
+{
 	UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %f"), DamageAmount);
 	Super::SoulsTakeDamage(DamageAmount, DamageType);
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	bool isBlocking = false;
 	if (bIsInvulnerable) return;
-	if (ASC) {
+	if (ASC)
+	{
 		const FGameplayTagContainer& CurrTags = ASC->GetOwnedGameplayTags();
 		for (const FGameplayTag& Tag : CurrTags)
 		{
@@ -167,22 +175,21 @@ void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType
 				break;
 			}
 		}
-		
-		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
+		float CurrentHealth = ASC->GetNumericAttribute(HealthAttribute);
 		float NewHealth = CurrentHealth - DamageAmount;
 		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
-		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
+		CurrentHealth = ASC->GetNumericAttribute(HealthAttribute);
 		if (PlayerHUD)
 		{
-			PlayerHUD->AddToPlayerScreen();
 			PlayerHUD->UpdateHealthBar(CurrentHealth, MaxHealth);
 		}
 		if (CurrentHealth <= 0 && !bIsDead)
 		{
 			Die();
 		}
-		else {
+		else
+		{
 			if (HitMontage)
 			{
 				UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -192,6 +199,17 @@ void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType
 				}
 			}
 		}
+	}
+}
+
+void ASoulsPlayerCharacter::SoulsHeal(float HealAmount)
+{
+	Super::SoulsHeal(HealAmount);
+	double CurrentHealth = 0;
+	GetHealth_Implementation(CurrentHealth);
+	if (PlayerHUD)
+	{
+		PlayerHUD->UpdateHealthBar(CurrentHealth, MaxHealth);
 	}
 }
 
@@ -219,7 +237,7 @@ void ASoulsPlayerCharacter::StartStaminaRegen()
 	{
 		return;
 	}
-	
+
 	GetWorld()->GetTimerManager().SetTimer(
 		StaminaRegenTimer,
 		this,
@@ -242,7 +260,7 @@ void ASoulsPlayerCharacter::RegenStamina()
 	if (NewStamina >= MaxStamina)
 	{
 		NewStamina = MaxStamina;
-		StopStaminaRegen(); 
+		StopStaminaRegen();
 	}
 	FGameplayAttribute StamAttribute = USoulAttributeSet::GetStaminaAttribute();
 	GetAbilitySystemComponent()->SetNumericAttributeBase(StamAttribute, NewStamina);
@@ -254,7 +272,7 @@ bool ASoulsPlayerCharacter::UseStamina(const float StaminaAmnt)
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	float CurrentStamina = ASC->GetNumericAttribute(USoulAttributeSet::GetStaminaAttribute());
 	if (CurrentStamina < StaminaAmnt) return false;
-	
+
 	FGameplayAttribute StamAttribute = USoulAttributeSet::GetStaminaAttribute();
 	float NewStam = CurrentStamina - StaminaAmnt;
 	ASC->SetNumericAttributeBase(StamAttribute, NewStam);
@@ -262,17 +280,22 @@ bool ASoulsPlayerCharacter::UseStamina(const float StaminaAmnt)
 	return true;
 }
 
+
 ///////////////////////////////////////////////////             Abilities                ///////////////////////////////////////////////////////////////////
 //Apply a gameplay effect to player
-void ASoulsPlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply) {
-	if (AbilitySystemComponent && EffectToApply) {
+void ASoulsPlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply)
+{
+	if (AbilitySystemComponent && EffectToApply)
+	{
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
 		//EffectContext.AddSourceObject(this);
 
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectToApply, 1.0f, EffectContext);
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
+			EffectToApply, 1.0f, EffectContext);
 		if (SpecHandle.IsValid())
 		{
-			FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(
+				*SpecHandle.Data.Get());
 		}
 	}
 }
@@ -300,44 +323,114 @@ void ASoulsPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	UInputAction* IA_MoveForward = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_MoveForward.IA_MoveForward")));
-	UInputAction* IA_Attack = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Attack.IA_Attack")));
-	UInputAction* IA_MoveRight = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_MoveRight.IA_MoveRight")));
-	UInputAction* IA_Block = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Block.IA_Block")));
-	UInputAction* IA_Jump = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Jump.IA_Jump")));
-	UInputAction* IA_LookRight = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_LookRight.IA_LookRight")));
-	UInputAction* IA_LookUp = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_LookUp.IA_LookUp")));
-	UInputAction* IA_Roll = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Roll.IA_Roll")));
-	UInputAction* IA_LockCamera = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_LockCamera.IA_LockCamera")));
+	UInputAction* IA_MoveForward = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr,
+	                                                                   TEXT(
+		                                                                   "/Game/Soulsbourne/Input/IA_MoveForward.IA_MoveForward")));
+	UInputAction* IA_Attack = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Attack.IA_Attack")));
+	UInputAction* IA_MoveRight = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr,
+	                                                                 TEXT(
+		                                                                 "/Game/Soulsbourne/Input/IA_MoveRight.IA_MoveRight")));
+	UInputAction* IA_Block = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Block.IA_Block")));
+	UInputAction* IA_Jump = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Jump.IA_Jump")));
+	UInputAction* IA_LookRight = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr,
+	                                                                 TEXT(
+		                                                                 "/Game/Soulsbourne/Input/IA_LookRight.IA_LookRight")));
+	UInputAction* IA_LookUp = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_LookUp.IA_LookUp")));
+	UInputAction* IA_Roll = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Roll.IA_Roll")));
+	UInputAction* IA_LockCamera = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr,
+	                                                                  TEXT(
+		                                                                  "/Game/Soulsbourne/Input/IA_LockCamera.IA_LockCamera")));
+	UInputAction* IA_Drink = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Heal.IA_Heal")));
+	UInputAction* IA_SwapItem = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_SwapItem.IA_SwapItem")));
+	
 
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		//Basic Move and Look
-		EnhancedInputComponent->BindAction(IA_MoveRight, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::MoveRight, IA_MoveRight);
-		EnhancedInputComponent->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::MoveForward, IA_MoveForward);
+		EnhancedInputComponent->BindAction(IA_MoveRight, ETriggerEvent::Triggered, this,
+		                                   &ASoulsPlayerCharacter::MoveRight, IA_MoveRight);
+		EnhancedInputComponent->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this,
+		                                   &ASoulsPlayerCharacter::MoveForward, IA_MoveForward);
 
-		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::LookRight);
+		EnhancedInputComponent->BindAction(IA_LookRight, ETriggerEvent::Triggered, this,
+		                                   &ASoulsPlayerCharacter::LookRight);
 		EnhancedInputComponent->BindAction(IA_LookUp, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::LookUp);
 		//Abilities
 		EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::PlayerJump);
-		EnhancedInputComponent->BindAction(IA_LockCamera, ETriggerEvent::Started, this, &ASoulsPlayerCharacter::LockCamera);
+		EnhancedInputComponent->BindAction(IA_LockCamera, ETriggerEvent::Started, this,
+		                                   &ASoulsPlayerCharacter::LockCamera);
 
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Block);
 		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Ongoing, this, &ASoulsPlayerCharacter::Block);
-		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Completed, this, &ASoulsPlayerCharacter::BlockComplete);
+		EnhancedInputComponent->BindAction(IA_Block, ETriggerEvent::Completed, this,
+		                                   &ASoulsPlayerCharacter::BlockComplete);
 
+		EnhancedInputComponent->BindAction(IA_Drink, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Drink);
+		EnhancedInputComponent->BindAction(IA_SwapItem, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::SwapItem);
 	}
 }
 
 //In Combat Component now, will be migrated to Gameplay Ability Soon
-void ASoulsPlayerCharacter::LockCamera(const FInputActionValue& Value) {
-
-	if (PlayerCombatComponent) {
+void ASoulsPlayerCharacter::LockCamera(const FInputActionValue& Value)
+{
+	if (PlayerCombatComponent)
+	{
 		PlayerCombatComponent->TargetLockCamera();
 	}
 }
 
+void ASoulsPlayerCharacter::Pickup_Implementation(TSubclassOf<UItem> Item)
+{
+	if (itemsPicked < 4)
+	{
+		if (UItem* ItemInstance = NewObject<UItem>(this, Item))
+		{
+			for (int i = 0; i < itemsPicked; i++)
+			{
+				if (InventorySlots[i] && InventorySlots[i]->ItemName == ItemInstance->ItemName)
+				{
+					InventorySlots[i]->Number++;
+					CheckItemCategory(ItemInstance, i);
+					return;
+				}
+			}
+			ItemInstance->Number = 1;
+			InventorySlots[itemsPicked] = ItemInstance;
+			CheckItemCategory(ItemInstance, itemsPicked);
+			itemsPicked++;
+		}
+	}
+}
+
+void ASoulsPlayerCharacter::CheckItemCategory(UItem* item, int slot)
+{
+	if (item->ItemCategory == "Weapons")
+	{
+		PlayerHUD->GetInventoryWidget()->SetSlot(
+			slot,
+			item->Icon);
+	}
+	else
+	{
+		PlayerHUD->GetInventoryWidget()->SetSlot(
+			slot,
+			item->Icon,
+			InventorySlots[slot]->Number
+		);
+	}
+	if (slot == equippedItemIndex)
+	{
+		NewSword->SetStaticMesh(InventorySlots[equippedItemIndex]->ItemMesh);
+	}
+}
 void ASoulsPlayerCharacter::SetHealthProgressBar(float HealthProgress)
 {
 }
@@ -345,20 +438,90 @@ void ASoulsPlayerCharacter::SetHealthProgressBar(float HealthProgress)
 void ASoulsPlayerCharacter::SetupStimulusSource()
 {
 	StimulusSource = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("Stimulus"));
-	if (StimulusSource) {
+	if (StimulusSource)
+	{
 		StimulusSource->RegisterForSense(TSubclassOf<UAISense_Sight>());
 		StimulusSource->RegisterWithPerceptionSystem();
+	}
+}
+
+void ASoulsPlayerCharacter::EquipItem(TSubclassOf<UItem> Item)
+{
+	if (UItem* ItemInstance = NewObject<UItem>(this, Item))
+	{
+		NewSword->SetStaticMesh(ItemInstance->ItemMesh);
+	}
+}
+
+void ASoulsPlayerCharacter::EquipWeapon(TSubclassOf<UItem> Item)
+{
+	if (UItem* ItemInstance = NewObject<UItem>(this, Item))
+	{
+		NewSword->SetStaticMesh(ItemInstance->ItemMesh);
 	}
 }
 
 //Blueprint for now, will be migrated to Gameplay Ability Soon
 void ASoulsPlayerCharacter::BlockComplete(const FInputActionValue& Value)
 {
-	if (AbilitySystemComponent) {
+	if (AbilitySystemComponent)
+	{
 		FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");
 		FGameplayTagContainer BlockTagContainer;
 		BlockTagContainer.AddTag(BlockTag);
-		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(BlockTagContainer);
+		FActiveGameplayEffectHandle ActiveGEHandle = AbilitySystemComponent->RemoveActiveEffectsWithGrantedTags(
+			BlockTagContainer);
+	}
+}
+
+void ASoulsPlayerCharacter::Drink(const FInputActionValue& Value)
+{
+	if (DrinkMontage)
+	{
+		int pI = 0;
+		UItem* PotionItem = nullptr;
+		for (int i = 0; i < itemsPicked; i++)
+		{
+			if (InventorySlots[i] && InventorySlots[i]->ItemName == TEXT("Potion"))
+			{
+				PotionItem = InventorySlots[i];
+				pI = i;
+			}
+		}
+		if (!PotionItem) return;
+		UAnimInstance* animInstance = GetMesh()->GetAnimInstance();
+		GetCharacterMovement()->MaxWalkSpeed = 600 * .2;
+		CachedItemMesh = NewSword->GetStaticMesh();
+		
+		PotionItem->Number--;
+		if (PotionItem->Number == 0)
+		{
+			InventorySlots[pI] = nullptr;
+			PlayerHUD->GetInventoryWidget()->SetSlot(pI, nullptr, 0);
+		}
+		NewSword->SetStaticMesh(PotionItem->ItemMesh);
+		animInstance->Montage_Play(DrinkMontage);
+		animInstance->Montage_SetEndDelegate(DrinkEnded, DrinkMontage);
+	}
+}
+
+void ASoulsPlayerCharacter::DrinkEndedFunction(UAnimMontage* Montage, bool bInterrupted)
+{
+	GetCharacterMovement()->MaxWalkSpeed = 600;
+	NewSword->SetStaticMesh(CachedItemMesh);
+}
+
+void ASoulsPlayerCharacter::SwapItem(const FInputActionValue& Value)
+{
+	equippedItemIndex++;
+	if (equippedItemIndex >= InventorySlots.Num()) equippedItemIndex = 0;
+	PlayerHUD->GetInventoryWidget()->SetEquipped(equippedItemIndex);
+	if (InventorySlots[equippedItemIndex])
+	{
+		NewSword->SetStaticMesh(InventorySlots[equippedItemIndex]->ItemMesh);
+	}else
+	{
+		NewSword->SetStaticMesh(nullptr);
 	}
 }
 
@@ -376,7 +539,8 @@ void ASoulsPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 {
 	double stam;
 	ABaseCharacter::GetStamina_Implementation(stam);
-	if (stam > 15.0f) {
+	if (stam > 15.0f)
+	{
 		FGameplayTag JumpTag = UGameplayTagsManager::Get().RequestGameplayTag("Player.Abilities.Jump");
 		FGameplayTagContainer JumpTagContainer;
 		JumpTagContainer.AddTag(JumpTag);
@@ -387,7 +551,6 @@ void ASoulsPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 
 void ASoulsPlayerCharacter::MoveForward(const FInputActionValue& Value, UInputAction* Action)
 {
-
 	if (Controller && Value.Get<float>() != 0.0f)
 	{
 		// Get the forward direction
@@ -396,10 +559,12 @@ void ASoulsPlayerCharacter::MoveForward(const FInputActionValue& Value, UInputAc
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		//Make it slightly slower if going backwards
-		if (Value.Get<float>() < 0.0f) {
+		if (Value.Get<float>() < 0.0f)
+		{
 			AddMovementInput(Direction, (Value.Get<float>() / 1.4));
 		}
-		else {
+		else
+		{
 			AddMovementInput(Direction, Value.Get<float>());
 		}
 		DirectionKey = ABaseCharacter::GetMovementDirection(Action);
@@ -408,7 +573,6 @@ void ASoulsPlayerCharacter::MoveForward(const FInputActionValue& Value, UInputAc
 
 void ASoulsPlayerCharacter::MoveRight(const FInputActionValue& Value, UInputAction* Action)
 {
-
 	if (Controller && Value.Get<float>() != 0.0f)
 	{
 		// Get the forward direction
@@ -419,22 +583,18 @@ void ASoulsPlayerCharacter::MoveRight(const FInputActionValue& Value, UInputActi
 		AddMovementInput(Direction, Value.Get<float>());
 		DirectionKey = GetMovementDirection(Action);
 	}
-
 }
 
 void ASoulsPlayerCharacter::LookRight(const FInputActionValue& Value)
 {
-
 	if (Controller && Value.Get<float>() != 0.0f)
 	{
-
 		AddControllerYawInput(Value.Get<float>());
 	}
 }
 
 void ASoulsPlayerCharacter::LookUp(const FInputActionValue& Value)
 {
-
 	if (Controller && Value.Get<float>() != 0.0f)
 	{
 		AddControllerPitchInput(Value.Get<float>());

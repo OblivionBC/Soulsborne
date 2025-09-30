@@ -129,7 +129,7 @@ void UBossRockThrow::PlayThrowMontage()
 			AttackMontage,
 			1.0f, // Rate
 			FName("Toss"), // Start Section Name
-			true, // bStopWhenAbilityEnds
+			false, // bStopWhenAbilityEnds
 			1.0f // Anim Root Motion Translation Scale
 		);
 		if (PlayMontageTask)
@@ -180,6 +180,13 @@ void UBossRockThrow::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
         	if (AnimInst && AttackMontage)
         	{
         		AnimInst->BossPhase = OldPhase;
+        		if (AnimInst->bIsHoldingRock)
+        		{
+        			if (CachedRock)
+        			{
+        				CachedRock->Destroy();
+        			}
+        		}
         		AnimInst->bIsHoldingRock = false;
         		AnimInst->Montage_Stop(0.f);
         	}
@@ -190,7 +197,8 @@ void UBossRockThrow::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 	        movement->MaxWalkSpeed = 600.0f;
 	    }
 	}
-
+	
+	bIsThrown = false;
 	bIsInAnimation = false;
 	AttackMontage = nullptr;
 	Boss = nullptr;
@@ -244,9 +252,9 @@ void UBossRockThrow::OnAttackHitWindow(FGameplayEventData Payload)
 		StartLocation,
 		TargetLocation,
 		2500.f,
-		false, // Do not favor high arcs
-		0.0f,  // Collision radius (optional)
-		0.0f,  // Override gravity (optional)
+		false,
+		0.0f,
+		0.0f,
 		ESuggestProjVelocityTraceOption::DoNotTrace
 	);
 	if (bHasSolution)
@@ -266,10 +274,9 @@ void UBossRockThrow::OnAttackHitWindow(FGameplayEventData Payload)
 
 		float Time = DistanceXY / Speed;
 
-		// Avoid div by zero
 		if (Time <= KINDA_SMALL_NUMBER)
 		{
-			PerformThrow(); // Or just bail
+			PerformThrow();
 			return;
 		}
 
@@ -281,7 +288,6 @@ void UBossRockThrow::OnAttackHitWindow(FGameplayEventData Payload)
 		CachedRock->SetActorEnableCollision(true);
 		CachedRock->SetActorTickEnabled(true);
 		CachedRock->OnFire(Velocity);
-		//!!!
 	}
 
 

@@ -24,7 +24,7 @@ EBTNodeResult::Type UBTTask_ChangeMoveSpeed::ExecuteTask(UBehaviorTreeComponent&
 
 	if (UCharacterMovementComponent* move = character->FindComponentByClass<UCharacterMovementComponent>())
 	{
-		move->SetMovementMode(Movement_Mode);
+		//move->SetMovementMode(Movement_Mode);
 		move->MaxWalkSpeed = NewSpeed;
 		return EBTNodeResult::Succeeded;
 	}

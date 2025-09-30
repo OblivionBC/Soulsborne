@@ -39,6 +39,7 @@ public:
 	const FKey GetMovementDirection(UInputAction* Action);
 	virtual void printAttributes();
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType);
+	virtual void SoulsHeal(float HealAmount);
 	virtual void Die();
 protected:
 	// Called when the game starts or when spawned

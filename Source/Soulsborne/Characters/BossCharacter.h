@@ -36,9 +36,25 @@ public:
 	UFUNCTION()
 	void ChangeMesh(USkeletalMesh* NewMesh);
 	/** Phase system */
+
+	UPROPERTY(EditAnywhere, Category = "VFX")
+	UParticleSystem* LandedFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* LandedSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* ImpactSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* JumpSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
+	UParticleSystem* JumpFX;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
 	UBossPhaseComponent* PhaseComponent;
-
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
 	UBossHUDComponent* HUDComponent;
 
@@ -55,8 +71,17 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
 	UAnimMontage* RipNTossMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
+	UAnimMontage* JumpMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
+	UAnimMontage* AirLoopMontage;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
+	UAnimMontage* ImpactMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FightMusic;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

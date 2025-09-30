@@ -1,0 +1,64 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "InventoryWidget.h"
+
+void UInventoryWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	Inventory.Add(Icon1);
+	Inventory.Add(Icon2);
+	Inventory.Add(Icon3);
+	Inventory.Add(Icon4);
+	Numbers.Add(Num1);
+	Numbers.Add(Num2);
+	Numbers.Add(Num3);
+	Numbers.Add(Num4);
+	Highlights.Add(Highlight1);
+	Highlights.Add(Highlight2);
+	Highlights.Add(Highlight3);
+	Highlights.Add(Highlight4);
+}
+
+void UInventoryWidget::SetSlot(int SlotNum, UTexture2D* Icon, int Number)
+{
+	UImage* selectedIcon = Inventory[SlotNum];
+	if (selectedIcon)
+	{
+		selectedIcon->SetBrushFromTexture(Icon);
+		SetCount(Number, SlotNum);
+	}
+}
+
+void UInventoryWidget::SetSlot(int SlotNum, UTexture2D* Icon)
+{
+	UImage* selectedIcon = Inventory[SlotNum];
+	if (selectedIcon)
+	{
+		selectedIcon->SetBrushFromTexture(Icon);
+	}
+}
+
+void UInventoryWidget::SetEquipped(int SlotNum)
+{
+	int oldSlot = SlotNum - 1;
+	if (SlotNum == 0)
+	{
+		oldSlot = 3;
+	}
+	Highlights[oldSlot]->SetVisibility(ESlateVisibility::Hidden);
+	Highlights[SlotNum]->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UInventoryWidget::SetCount(int32 Count, int SlotNum)
+{
+	if (Count == 0)
+	{
+		Numbers[SlotNum]->SetText(FText::GetEmpty());
+
+	}else
+	{
+		Numbers[SlotNum]->SetText(FText::AsNumber(Count));
+	}
+}

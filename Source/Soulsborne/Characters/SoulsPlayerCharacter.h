@@ -3,22 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-#include "GameplayTagContainer.h"
-#include <GameplayEffectTypes.h>
-#include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputMappingContext.h"
 #include "InputAction.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
 #include "BaseCharacter.h"
 #include "../PlayerCombatComponent.h"
-#include "../UI/ProgressBarInterface.h"
 #include "../PlayerCombatInterface.h"
 #include "../SoulAttributeSet.h"
 #include "Components/ProgressBar.h"
+#include "Soulsborne/Items/Item.h"
+#include "Soulsborne/Items/PickupInterface.h"
+#include "Soulsborne/Items/WeaponItem.h"
 #include "Soulsborne/UI/PlayerHUDWidget.h"
 #include "SoulsPlayerCharacter.generated.h"
 
@@ -26,7 +23,7 @@
  *
  */
 UCLASS()
-class SOULSBORNE_API ASoulsPlayerCharacter : public ABaseCharacter, public IPlayerCombatInterface
+class SOULSBORNE_API ASoulsPlayerCharacter : public ABaseCharacter, public IPlayerCombatInterface, public IPickupInterface
 {
 	GENERATED_BODY()
 
@@ -68,12 +65,17 @@ protected:
 	virtual void LookUp(const FInputActionValue& Value);
 	virtual void Block(const FInputActionValue& Value);
 	virtual void BlockComplete(const FInputActionValue& Value);
+	virtual void Drink(const FInputActionValue& Value);
 	virtual void PlayerJump(const FInputActionValue& Value);
 	virtual void LockCamera(const FInputActionValue& Value);
 
+	UFUNCTION()
+	virtual void Pickup_Implementation(TSubclassOf<UItem> Item);
+	void CheckItemCategory(UItem* item, int slot);
 	/**	----------------------------------- Properties ------------------------------------ **/
 public:
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
+	virtual void SoulsHeal(float HealAmount) override;
 	void StartStaminaRegen();
 	void StopStaminaRegen();
 	void RegenStamina();
@@ -94,8 +96,26 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UAnimMontage* HitMontage;
-protected:
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UAnimMontage* DrinkMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	TArray<UItem*> InventorySlots;
+	int itemsPicked = 0;
+	int equippedItemIndex = 0;
+	UFUNCTION()
+	void DrinkEndedFunction(UAnimMontage* Montage, bool bInterrupted);
+	void SwapItem(const FInputActionValue& Value);
+	FOnMontageEnded DrinkEnded;
+	
+protected:
+	
+	UPROPERTY(EditAnywhere)
+	UStaticMeshComponent* NewSword;
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* CachedItemMesh;
+		
 	bool bCanRegenStamina = true;
 	FTimerHandle StaminaRegenTimer;
 	float StaminaRegenRate = 0.5f;
@@ -120,4 +140,10 @@ protected:
 
 	class UAIPerceptionStimuliSourceComponent* StimulusSource;
 	void SetupStimulusSource();
+	
+	UFUNCTION()
+	void EquipItem(TSubclassOf<UItem> Item);
+
+	UFUNCTION()
+	void EquipWeapon(TSubclassOf<UItem> Item);
 };
