@@ -14,17 +14,20 @@ class SOULSBORNE_API UBossRockThrow : public UGameplayAbility
 public:
 	UBossRockThrow();
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Attack")
+	TSubclassOf<AProjectile> RockProjectile;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Attack")
+	UAnimMontage* RipNTossMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* ThrowSound;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Attack Flow")
 	float PauseTimeBetweenAttacks = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attack Flow")
 	float TurnSpeed = 100.0f; // Degrees per second
-
-	UPROPERTY(EditDefaultsOnly, Category = "Attack")
-	USoundBase* AttackSound;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Attack")
-	UAnimMontage* AttackMontage;
 protected:
 	// Called when ability starts
 	virtual void ActivateAbility(

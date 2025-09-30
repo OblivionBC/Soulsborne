@@ -37,15 +37,15 @@ public:
 	void ChangeMesh(USkeletalMesh* NewMesh);
 	/** Phase system */
 
-	UPROPERTY(EditAnywhere, Category = "VFX")
-	UParticleSystem* LandedFX;
+	UPROPERTY(EditAnywhere, Category="Abilities")
+	TSubclassOf<UGameplayAbility> LeapAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
-	USoundBase* LandedSound;
+	UPROPERTY(EditAnywhere, Category="Abilities")
+	TSubclassOf<UGameplayAbility> BasicAttackAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
-	USoundBase* ImpactSound;
-
+	UPROPERTY(EditAnywhere, Category="Abilities")
+	TSubclassOf<UGameplayAbility> RockThrowAbility;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* JumpSound;
 
@@ -68,22 +68,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
 	UAnimMontage* EmoteMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
-	UAnimMontage* RipNTossMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
-	UAnimMontage* JumpMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
-	UAnimMontage* AirLoopMontage;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
-	UAnimMontage* ImpactMontage;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FightMusic;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<AProjectile> RockProjectile;
 };

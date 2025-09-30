@@ -45,8 +45,8 @@ ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName); // Attach the camera to the end of the boom
 	Camera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	NewSword = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NewSwordMesh"));
-	NewSword->SetupAttachment(GetMesh(), TEXT("hand_r"));
+	EquippedItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
+	EquippedItem->SetupAttachment(GetMesh(), TEXT("hand_r"));
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -55,7 +55,6 @@ ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	SetupStimulusSource();
 	PrimaryActorTick.bCanEverTick = true;
-	DrinkEnded.BindUObject(this, &ASoulsPlayerCharacter::DrinkEndedFunction);
 }
 
 /** Called when the game starts or when spawned */
@@ -142,8 +141,6 @@ void ASoulsPlayerCharacter::StartDamageTrace_Implementation() const
 {
 	if (PlayerCombatComponent)
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Start Damage Trace Implementation Called"));
-		PlayerCombatComponent->BeginDamageTrace(RHandArmament);
 	}
 }
 
@@ -151,8 +148,6 @@ void ASoulsPlayerCharacter::EndDamageTrace_Implementation() const
 {
 	if (PlayerCombatComponent)
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("End Damage Trace Implementation Called"));
-		PlayerCombatComponent->EndDamageTrace();
 	}
 }
 
@@ -312,8 +307,9 @@ void ASoulsPlayerCharacter::GiveDefaultAbilities()
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility, 1, 0));
 		}
 		//C++ Implemented Abilities
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UAttackCombo::StaticClass(), 1, 0));
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UDodge::StaticClass(), 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AttackComboAbility, 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(DodgeAbility, 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(DrinkAbility, 1, 0));
 	}
 }
 
@@ -326,8 +322,6 @@ void ASoulsPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	UInputAction* IA_MoveForward = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr,
 	                                                                   TEXT(
 		                                                                   "/Game/Soulsbourne/Input/IA_MoveForward.IA_MoveForward")));
-	UInputAction* IA_Attack = Cast<UInputAction>(
-		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Attack.IA_Attack")));
 	UInputAction* IA_MoveRight = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr,
 	                                                                 TEXT(
 		                                                                 "/Game/Soulsbourne/Input/IA_MoveRight.IA_MoveRight")));
@@ -349,6 +343,8 @@ void ASoulsPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Heal.IA_Heal")));
 	UInputAction* IA_SwapItem = Cast<UInputAction>(
 		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_SwapItem.IA_SwapItem")));
+	UInputAction* IA_Attack = Cast<UInputAction>(
+		StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Attack.IA_Attack")));
 	
 
 
@@ -375,6 +371,10 @@ void ASoulsPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 		EnhancedInputComponent->BindAction(IA_Drink, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Drink);
 		EnhancedInputComponent->BindAction(IA_SwapItem, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::SwapItem);
+		
+		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Dodge);
+		EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Attack);
+		
 	}
 }
 
@@ -428,7 +428,7 @@ void ASoulsPlayerCharacter::CheckItemCategory(UItem* item, int slot)
 	}
 	if (slot == equippedItemIndex)
 	{
-		NewSword->SetStaticMesh(InventorySlots[equippedItemIndex]->ItemMesh);
+		EquippedItem->SetStaticMesh(InventorySlots[equippedItemIndex]->ItemMesh);
 	}
 }
 void ASoulsPlayerCharacter::SetHealthProgressBar(float HealthProgress)
@@ -449,7 +449,7 @@ void ASoulsPlayerCharacter::EquipItem(TSubclassOf<UItem> Item)
 {
 	if (UItem* ItemInstance = NewObject<UItem>(this, Item))
 	{
-		NewSword->SetStaticMesh(ItemInstance->ItemMesh);
+		EquippedItem->SetStaticMesh(ItemInstance->ItemMesh);
 	}
 }
 
@@ -457,7 +457,7 @@ void ASoulsPlayerCharacter::EquipWeapon(TSubclassOf<UItem> Item)
 {
 	if (UItem* ItemInstance = NewObject<UItem>(this, Item))
 	{
-		NewSword->SetStaticMesh(ItemInstance->ItemMesh);
+		EquippedItem->SetStaticMesh(ItemInstance->ItemMesh);
 	}
 }
 
@@ -476,7 +476,7 @@ void ASoulsPlayerCharacter::BlockComplete(const FInputActionValue& Value)
 
 void ASoulsPlayerCharacter::Drink(const FInputActionValue& Value)
 {
-	if (DrinkMontage)
+	if (DrinkAbility)
 	{
 		int pI = 0;
 		UItem* PotionItem = nullptr;
@@ -489,9 +489,6 @@ void ASoulsPlayerCharacter::Drink(const FInputActionValue& Value)
 			}
 		}
 		if (!PotionItem) return;
-		UAnimInstance* animInstance = GetMesh()->GetAnimInstance();
-		GetCharacterMovement()->MaxWalkSpeed = 600 * .2;
-		CachedItemMesh = NewSword->GetStaticMesh();
 		
 		PotionItem->Number--;
 		if (PotionItem->Number == 0)
@@ -499,16 +496,9 @@ void ASoulsPlayerCharacter::Drink(const FInputActionValue& Value)
 			InventorySlots[pI] = nullptr;
 			PlayerHUD->GetInventoryWidget()->SetSlot(pI, nullptr, 0);
 		}
-		NewSword->SetStaticMesh(PotionItem->ItemMesh);
-		animInstance->Montage_Play(DrinkMontage);
-		animInstance->Montage_SetEndDelegate(DrinkEnded, DrinkMontage);
+		EquippedItem->SetStaticMesh(PotionItem->ItemMesh);
+		AbilitySystemComponent->TryActivateAbilityByClass(DrinkAbility);
 	}
-}
-
-void ASoulsPlayerCharacter::DrinkEndedFunction(UAnimMontage* Montage, bool bInterrupted)
-{
-	GetCharacterMovement()->MaxWalkSpeed = 600;
-	NewSword->SetStaticMesh(CachedItemMesh);
 }
 
 void ASoulsPlayerCharacter::SwapItem(const FInputActionValue& Value)
@@ -518,14 +508,23 @@ void ASoulsPlayerCharacter::SwapItem(const FInputActionValue& Value)
 	PlayerHUD->GetInventoryWidget()->SetEquipped(equippedItemIndex);
 	if (InventorySlots[equippedItemIndex])
 	{
-		NewSword->SetStaticMesh(InventorySlots[equippedItemIndex]->ItemMesh);
+		EquippedItem->SetStaticMesh(InventorySlots[equippedItemIndex]->ItemMesh);
 	}else
 	{
-		NewSword->SetStaticMesh(nullptr);
+		EquippedItem->SetStaticMesh(nullptr);
 	}
 }
 
-//Blueprint for now, will be migrated to Gameplay Ability Soon
+void ASoulsPlayerCharacter::Attack(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->TryActivateAbilityByClass(AttackComboAbility);
+}
+
+void ASoulsPlayerCharacter::Dodge(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->TryActivateAbilityByClass(DodgeAbility);
+}
+
 void ASoulsPlayerCharacter::Block(const FInputActionValue& Value)
 {
 	FGameplayTag BlockTag = UGameplayTagsManager::Get().RequestGameplayTag("Character.IsBlocking");

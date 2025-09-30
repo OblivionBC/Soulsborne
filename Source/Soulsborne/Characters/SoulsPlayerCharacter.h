@@ -104,15 +104,13 @@ public:
 	TArray<UItem*> InventorySlots;
 	int itemsPicked = 0;
 	int equippedItemIndex = 0;
-	UFUNCTION()
-	void DrinkEndedFunction(UAnimMontage* Montage, bool bInterrupted);
 	void SwapItem(const FInputActionValue& Value);
+	void Attack(const FInputActionValue& Value);
+	void Dodge(const FInputActionValue& Value);
 	FOnMontageEnded DrinkEnded;
 	
 protected:
 	
-	UPROPERTY(EditAnywhere)
-	UStaticMeshComponent* NewSword;
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* CachedItemMesh;
 		
@@ -122,7 +120,12 @@ protected:
 	float StaminaRegenInterval = 0.05f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
 	TSubclassOf<UGameplayEffect> RechargeStaminaEffect;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> DodgeAbility;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> DrinkAbility;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> AttackComboAbility;
 	/* UI */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	UPlayerHUDWidget* PlayerHUD;

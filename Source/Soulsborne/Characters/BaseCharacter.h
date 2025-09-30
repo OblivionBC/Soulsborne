@@ -44,14 +44,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	UAbilitySystemComponent* AbilitySystemComponent;
-
-	/* Equipment */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
-	TSubclassOf<AActor> LHandArmamentClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
-	TSubclassOf<AActor> RHandArmamentClass;
-
+	
 	/*  Attributes */
 	UPROPERTY()
 	class USoulAttributeSet* Attributes;
@@ -66,11 +59,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tags")
 	FGameplayTagContainer ClassTags;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
-	AActor* RHandArmament;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
-	AActor* LHandArmament;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UStaticMeshComponent* EquippedItem;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UArrowComponent* AttackArrow;

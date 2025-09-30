@@ -119,15 +119,13 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
 			if (!Character)
 				continue;
-			
-			UAbilitySystemComponent* TargetASC = Character->GetAbilitySystemComponent();
-			if (!TargetASC)
-				continue;
 
 			Character->SoulsTakeDamage(Damage, TEXT("Projectile"));
 		}
 	}
 
+	if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(GetWorld(), ImpactSound, GetActorLocation());
+	RadialForce->FireImpulse();
 	Destroy();
 }
 
@@ -186,11 +184,12 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 			UAbilitySystemComponent* TargetASC = Character->GetAbilitySystemComponent();
 			if (!TargetASC)
 				continue;
+
 			
-			RadialForce->FireImpulse();
 			Character->SoulsTakeDamage(Damage, TEXT("Projectile"));
 		}
 	}
-
+	if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(GetWorld(), ImpactSound, GetActorLocation());
+	RadialForce->FireImpulse();
 	Destroy();
 }

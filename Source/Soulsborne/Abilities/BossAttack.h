@@ -17,18 +17,17 @@ class SOULSBORNE_API UBossAttack : public UGameplayAbility
 
 public:
 	UBossAttack();
+	
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Attack")
+	UAnimMontage* PrimaryAttackMontage;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Attack Flow")
 	float PauseTimeBetweenAttacks = 0.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attack Flow")
 	float TurnSpeed = 100.0f; // Degrees per second
 
-	UPROPERTY(EditDefaultsOnly, Category = "Attack")
-	USoundBase* AttackSound;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Attack")
-	UAnimMontage* AttackMontage;
 protected:
 	// Called when ability starts
 	virtual void ActivateAbility(

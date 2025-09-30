@@ -25,6 +25,9 @@ public:
 	
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovementComponent;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	USoundBase* ImpactSound;
 protected:
 	virtual void BeginPlay() override;
 

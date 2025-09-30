@@ -34,10 +34,6 @@ void UBossAttack::ActivateAbility(
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	if (Boss->PrimaryAttackMontage)
-	{
-		AttackMontage = Boss->PrimaryAttackMontage;
-	}
 	GetAbilitySystemComponentFromActorInfo()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("State.Attacking"));
 
 	UAnimInstance* AnimInstance = Boss->GetMesh()->GetAnimInstance();
@@ -51,7 +47,7 @@ void UBossAttack::ActivateAbility(
   	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
 		TEXT("PlayAttack1Task"), // Unique task name
-		AttackMontage,
+		PrimaryAttackMontage,
 		1.0f, // Rate
 		FName("Attack1"), // Start Section Name
 		true, // bStopWhenAbilityEnds
@@ -101,12 +97,12 @@ void UBossAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 		ai->SetIsAttacking(false);
 	}
 	GetWorld()->GetTimerManager().ClearTimer(TurnTimerHandle);
-	if (Boss && AttackMontage)
+	if (Boss && PrimaryAttackMontage)
 	{
 		UAnimInstance* AnimInstance = Boss->GetMesh()->GetAnimInstance();
 		if (AnimInstance)
 		{
-			AnimInstance->Montage_Stop(0.f, AttackMontage);
+			AnimInstance->Montage_Stop(0.f, PrimaryAttackMontage);
 			//AnimInstance->OnMontageEnded.Clear();
 		}
 	}
@@ -228,7 +224,7 @@ void UBossAttack::OnTurnToPlayerFinished()
 	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
 		TEXT("PlayAttack2Task"), // Unique task name
-		AttackMontage,
+		PrimaryAttackMontage,
 		0.9f,
 		FName("Attack2"),
 		true,
@@ -257,7 +253,7 @@ void UBossAttack::OnWaitDelayFinishedAfterAttack2()
 	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
 		TEXT("PlayAttack3Task"), // Unique task name
-		AttackMontage,
+		PrimaryAttackMontage,
 		0.7f,
 		FName("Attack3"),
 		true,

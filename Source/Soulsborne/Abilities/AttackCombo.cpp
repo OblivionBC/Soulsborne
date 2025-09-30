@@ -65,10 +65,6 @@ void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		if (!player->UseStamina(5.0f)) EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		player->StopStaminaRegen();
 	}
-	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(Avatar->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
-	{
-		movement->DisableMovement();
-	};
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();

@@ -32,11 +32,7 @@ void UBossRockThrow::ActivateAbility(
 	
 	PlayerTarget = GetWorld()->GetFirstPlayerController()->GetPawn();
 	Boss = Cast<ABossCharacter>(ActorInfo->AvatarActor.Get());
-	if (Boss)
-	{
-		AttackMontage = Boss->RipNTossMontage;
-	}
-	if (!Boss || !AttackMontage)
+	if (!Boss || !RipNTossMontage)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
@@ -92,18 +88,17 @@ void UBossRockThrow::PlayRipMontage()
 		bIsInAnimation = true;
 		UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
         		this,
-        		TEXT("PlayRipTask"), // Unique task name
-        		AttackMontage,
-        		0.7f, // Rate
-        		FName("Rip"), // Start Section Name
-        		true, // bStopWhenAbilityEnds
-        		1.0f // Anim Root Motion Translation Scale
+        		TEXT("PlayRipTask"),
+        		RipNTossMontage,
+        		0.7f,
+        		FName("Rip"),
+        		true,
+        		1.0f
         	);
         	if (PlayMontageTask)
         	{
-        		// Bind directly to your UFUNCTION callbacks
+        		if (ThrowSound) UGameplayStatics::PlaySoundAtLocation(Boss->GetWorld(), ThrowSound, Boss->GetActorLocation(), Boss->GetActorRotation());
         		PlayMontageTask->OnCompleted.AddDynamic(this, &UBossRockThrow::Strafe);
-        		//PlayMontageTask->OnInterrupted.AddDynamic(this, &UBossRockThrow::Interupt);
         		PlayMontageTask->ReadyForActivation();
         	}
         	else
@@ -125,18 +120,16 @@ void UBossRockThrow::PlayThrowMontage()
 		bIsInAnimation = true;
 		UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this,
-			TEXT("PlayTossTask"), // Unique task nameS
-			AttackMontage,
-			1.0f, // Rate
-			FName("Toss"), // Start Section Name
-			false, // bStopWhenAbilityEnds
-			1.0f // Anim Root Motion Translation Scale
+			TEXT("PlayTossTask"),
+			RipNTossMontage,
+			1.0f,
+			FName("Toss"),
+			false,
+			1.0f
 		);
 		if (PlayMontageTask)
 		{
-			// Bind directly to your UFUNCTION callbacks
 			PlayMontageTask->OnCompleted.AddDynamic(this, &UBossRockThrow::OnMontage2Completed);
-			//PlayMontageTask->OnInterrupted.AddDynamic(this, &UBossRockThrow::OnMontage2Completed);
 
 			PlayMontageTask->ReadyForActivation();
 		}
@@ -167,9 +160,9 @@ void UBossRockThrow::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 	}
 
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	if (ASC && AttackMontage)
+	if (ASC && RipNTossMontage)
 	{
-		ASC->StopMontageIfCurrent(*AttackMontage);
+		ASC->StopMontageIfCurrent(*RipNTossMontage);
 	}
 	
 	if (Boss)
@@ -177,7 +170,7 @@ void UBossRockThrow::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 		if (Boss->GetMesh())
         {
         	UBossAnimInstance* AnimInst = Cast<UBossAnimInstance>(Boss->GetMesh()->GetAnimInstance());
-        	if (AnimInst && AttackMontage)
+        	if (AnimInst && RipNTossMontage)
         	{
         		AnimInst->BossPhase = OldPhase;
         		if (AnimInst->bIsHoldingRock)
@@ -200,7 +193,7 @@ void UBossRockThrow::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 	
 	bIsThrown = false;
 	bIsInAnimation = false;
-	AttackMontage = nullptr;
+	RipNTossMontage = nullptr;
 	Boss = nullptr;
 	PlayerTarget = nullptr;
 }
@@ -214,7 +207,7 @@ void UBossRockThrow::OnSpawnRock(FGameplayEventData Payload)
 {
 	if (!Boss) return EndAbility();
 
-	CachedRock = Boss->GetWorld()->SpawnActor<AProjectile>(Boss->RockProjectile, Boss->GetActorLocation()+100, FRotator::ZeroRotator);
+	CachedRock = Boss->GetWorld()->SpawnActor<AProjectile>(RockProjectile, Boss->GetActorLocation()+100, FRotator::ZeroRotator);
 	CachedRock->SetActorEnableCollision(false);
 	CachedRock->SetOwner(Boss);
 	if (!CachedRock) return;

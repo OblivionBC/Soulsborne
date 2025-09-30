@@ -32,7 +32,6 @@ void UBossLeap::ActivateAbility(
         return;
     }
 
-    ShockwaveFX = Boss->LandedFX;
     BossAIController = Cast<ABossAIController>(Boss->GetController());
     if (BossAIController)
     {
@@ -74,9 +73,9 @@ void UBossLeap::PerformLeap()
         UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Boss->JumpSound, BossLoc, Boss->GetActorRotation());
     }
 
-    if (Boss->JumpMontage)
+    if (JumpMontage)
     {
-        Boss->PlayAnimMontage(Boss->JumpMontage);
+        Boss->PlayAnimMontage(JumpMontage);
     }
 
     Boss->LaunchCharacter(LaunchVelocity, true, true);
@@ -89,25 +88,30 @@ void UBossLeap::OnBossLanded(const FHitResult& Hit)
     UE_LOG(LogTemp, Warning, TEXT("BossLanded"));
     if (!Boss) return;
 
-    if (Boss->AirLoopMontage)
+    if (AirLoopMontage)
     {
-        Boss->StopAnimMontage(Boss->AirLoopMontage);
+        Boss->StopAnimMontage(AirLoopMontage);
     }
     
-    if (Boss->ImpactMontage)
+    if (ImpactMontage)
     {
-        Boss->PlayAnimMontage(Boss->ImpactMontage, 1.0f);
+        Boss->PlayAnimMontage(ImpactMontage, 1.0f);
     }
 
-    if (Boss->LandedSound)
+    if (LandedSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(this->GetWorld(), Boss->LandedSound, Boss->GetActorLocation(), Boss->GetActorRotation());
+        UGameplayStatics::PlaySoundAtLocation(this->GetWorld(), LandedSound, Boss->GetActorLocation(), Boss->GetActorRotation());
     }
 
     if (ShockwaveFX)
     {
         FVector Scale = FVector(2.0f);
         UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShockwaveFX, Boss->GetActorLocation(), FRotator::ZeroRotator, Scale, true);
+    }
+
+    if (ImpactSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this->GetWorld(), ImpactSound, Boss->GetActorLocation(), Boss->GetActorRotation());
     }
 
     FVector Center = Boss->GetActorLocation();

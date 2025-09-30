@@ -69,14 +69,6 @@ void ABaseCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socke
 		FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
 		FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
 		FActorSpawnParameters SpawnParams;
-		if (LHandArmamentClass) {
-			LHandArmament = GetWorld()->SpawnActor<AActor>(LHandArmamentClass, LeftSocketT, SpawnParams);
-			LHandArmament->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, leftSocketName);
-		}
-		if (RHandArmamentClass) {
-			RHandArmament = GetWorld()->SpawnActor<AActor>(RHandArmamentClass, RightSocketT, SpawnParams);
-			RHandArmament->AttachToComponent(PlayerMesh, FAttachmentTransformRules::SnapToTargetIncludingScale, rightSocketName);
-		}
 	}
 }
 

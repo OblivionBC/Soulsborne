@@ -15,11 +15,22 @@ public:
 	UBossLeap();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attack")
-	UAnimMontage* AttackMontage;
+	UAnimMontage* AirLoopMontage;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Attack")
+	UAnimMontage* ImpactMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Attack")
+	UAnimMontage* JumpMontage;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
 	UParticleSystem* ShockwaveFX;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* LandedSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* ImpactSound;
 protected:
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,

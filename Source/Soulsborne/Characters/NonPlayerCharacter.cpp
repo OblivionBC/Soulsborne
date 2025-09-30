@@ -36,7 +36,7 @@ void ANonPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	FName rightSocketName = "righthandSocket";
-	AttatchEquipment(RHandArmamentClass, rightSocketName);
+	//AttatchEquipment(RHandArmamentClass, rightSocketName);
 	ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
 	if (Player)
 	{
@@ -116,7 +116,7 @@ void ANonPlayerCharacter::OnDeath()
 {
 	Super::OnDeath();
 
-	this->GetMesh()->SetSimulatePhysics(true);
+	//this->GetMesh()->SetSimulatePhysics(true);
 	DetachFromControllerPendingDestroy();
 }
 

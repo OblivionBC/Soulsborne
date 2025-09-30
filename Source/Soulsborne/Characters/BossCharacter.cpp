@@ -59,9 +59,9 @@ void ABossCharacter::GiveDefaultAbilities()
 	if (HasAuthority() && AbilitySystemComponent)
 	{
 		//C++ Implemented Abilities
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossAttack::StaticClass(), 1, 0));
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossRockThrow::StaticClass(), 1, 0));
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UBossLeap::StaticClass(), 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(BasicAttackAbility, 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(RockThrowAbility, 1, 0));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(LeapAbility, 1, 0));
 	}
 }
 
@@ -163,10 +163,6 @@ void ABossCharacter::PerformBasicAttack()
 			ASoulsPlayerCharacter* Character = Cast<ASoulsPlayerCharacter>(HitActor);
 			if (!Character)
 				continue;
-			
-			UAbilitySystemComponent* TargetASC = Character->GetAbilitySystemComponent();
-			if (!TargetASC)
-				continue;
 
 			Character->SoulsTakeDamage(30.f, TEXT("Slash"));
 		}
@@ -175,10 +171,9 @@ void ABossCharacter::PerformBasicAttack()
 
 void ABossCharacter::PerformPhaseAbility(int32 Phase)
 {
-	// For now reuse combo; later swap this with other abilities based on phase
 	if (Phase != 0)
 	{
-		PerformBasicAttack(); // placeholder
+		PerformBasicAttack();
 	}
 }
 
