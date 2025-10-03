@@ -3,15 +3,10 @@
 
 #include "AttackTraceNotify.h"
 #include "TimerManager.h"
-#include "PlayerCombatComponent.h"
-#include "PlayerCombatInterface.h"
-#include "PlayerCombatInterface.cpp"
 #include "AbilitySystemGlobals.h"
-#include "AI/BossAIController.h"
-#include "Characters/BossCharacter.h"
-#include "Characters/SoulsPlayerCharacter.h"
-#include "Components/IBossCombatInterface.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "Kismet/GameplayStatics.h"
+#include "Soulsborne/Characters/BossCharacter.h"
 
 void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
@@ -30,9 +25,6 @@ void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
 				EventData.EventTag = EventTag;
 
 				ASC->HandleGameplayEvent(EventTag, &EventData);
-			}else if (UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>())
-			{
-				CombatComponent->BeginDamageTrace();
 			}
 		}
 	}
@@ -40,16 +32,4 @@ void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
 
 void UAttackTraceNotify::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	if (AActor* Owner = MeshComp->GetOwner())
-	{
-		if (!Cast<ABossCharacter>(Owner))
-		{
-			if (UPlayerCombatComponent* CombatComponent = Owner->FindComponentByClass<UPlayerCombatComponent>())
-			{
-				//BeginTrace
-				CombatComponent->EndDamageTrace();
-				//IPlayerCombatInterface::Execute_EndDamageTrace(Owner);
-			}
-		}
-	}
 }

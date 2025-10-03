@@ -55,10 +55,8 @@ void ABossCharacter::OnDeath()
 void ABossCharacter::GiveDefaultAbilities()
 {
 	Super::GiveDefaultAbilities();
-	// Grant abilities, but only on the server
 	if (HasAuthority() && AbilitySystemComponent)
 	{
-		//C++ Implemented Abilities
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(BasicAttackAbility, 1, 0));
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(RockThrowAbility, 1, 0));
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(LeapAbility, 1, 0));
@@ -73,7 +71,6 @@ void ABossCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 		return;
 	}
 	double Health = 0.0;
-	UE_LOG(LogTemp, Display, TEXT("DamageAmount: %f"), DamageAmount);
 	GetHealth_Implementation(Health);
 	float HealthPercent = Health / this->MaxHealth;
 	PhaseComponent->CheckPhaseTransition(HealthPercent);
@@ -82,20 +79,16 @@ void ABossCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 
 void ABossCharacter::OnPlayerKilledHandler(AActor* KilledPlayer)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy AI detected player was killed!"));
 	GetCharacterMovement()->StopMovementImmediately();
 	
 	if (ABossAIController* controller = Cast<ABossAIController>(GetController()))
 	{
 		controller->SetbIsPlayerDead(true);
 	}
-	
 }
 
 void ABossCharacter::HandlePhaseChange(int32 NewPhase)
 {
-	
-	UE_LOG(LogTemp, Display, TEXT("PhaseChange: %d"), NewPhase);
 	if (ABossAIController* ai = Cast<ABossAIController>(this->GetController()))
 	{
 		ai->SetbIsCombatEngaged(false);
@@ -119,8 +112,8 @@ void ABossCharacter::HandlePhaseChange(int32 NewPhase)
 
 void ABossCharacter::PerformBasicAttack()
 {
-	float Radius = 200.f;
-	float Distance = 150.f;
+	const float Radius = 200.f;
+	const float Distance = 150.f;
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -145,15 +138,6 @@ void ABossCharacter::PerformBasicAttack()
 		QueryParams
 	);
 
-	DrawDebugCapsule(
-	World,
-	(Start + End) * 0.5f, // Midpoint of sweep
-	(End - Start).Size() * 0.5f, // Half-height of capsule
-	Sphere.GetSphereRadius(),
-	FRotationMatrix::MakeFromZ(End - Start).ToQuat(),
-	FColor::Green,
-	false,
-	1.0f);
 	
 	if (bHit)
 	{
@@ -180,7 +164,6 @@ void ABossCharacter::PerformPhaseAbility(int32 Phase)
 void ABossCharacter::TraceForAttack(FGameplayTag AttackTag)
 {
 	FName AttackName = AttackTag.GetTagName();
-	UE_LOG(LogTemp, Display, TEXT("PerformBasicAttack"))
 	if (AttackName == TEXT("Boss.Attack"))
 	{
 		PerformBasicAttack();
@@ -195,12 +178,8 @@ void ABossCharacter::ChangeMesh(USkeletalMesh* NewMesh)
 
 	if (!MeshComp->SkeletalMesh || MeshComp->SkeletalMesh->GetSkeleton() != NewMesh->GetSkeleton())
 	{
-		UE_LOG(LogTemp, Error, TEXT("Skeleton mismatch, cannot swap mesh."));
 		return;
 	}
 
-	// Set the new mesh but keep the current AnimInstance
-	MeshComp->SetSkeletalMeshAsset(NewMesh); // false = do NOT reinitialize the anim instance
-
-	UE_LOG(LogTemp, Log, TEXT("Skeletal mesh swapped and animation preserved."));
+	MeshComp->SetSkeletalMeshAsset(NewMesh);
 }

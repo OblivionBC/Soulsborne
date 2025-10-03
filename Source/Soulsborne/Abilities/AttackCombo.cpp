@@ -2,11 +2,9 @@
 
 #include "AttackCombo.h"
 #include "../Characters/BaseCharacter.h"
-#include "../PlayerCombatComponent.h"
 #include "AbilitySystemComponent.h"	
 #include "../GameplayTags/SoulsGameplayTags.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Soulsborne/Characters/BossCharacter.h"
 #include "Soulsborne/Characters/SoulsPlayerCharacter.h"
 
 UAttackCombo::UAttackCombo()

@@ -3,12 +3,9 @@
 
 #include "SoulsPlayerCharacter.h"
 
-#include "../SoulAttributeSet.h"
-#include "../Abilities/Dodge.h"
-#include "../Abilities/AttackCombo.h"
-
 #include "AbilitySystemComponent.h"
 #include "DrawDebugHelpers.h"
+#include "EnhancedInputComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagsModule.h"
 #include "GameplayAbilitySpec.h"
@@ -22,32 +19,28 @@
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "../GameplayTags/SoulsGameplayTags.h"
-#include "Components/ProgressBar.h"
 #include "Soulsborne/UI/PlayerHUDWidget.h"
-
-
-///////////////////////////////////////////////////             Base Functions                ///////////////////////////////////////////////////////////////
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "GameFramework/PlayerController.h"
+#include "Camera/CameraComponent.h"
+#include "Soulsborne/Abilities/SoulAttributeSet.h"
+#include "Soulsborne/GameplayTags/SoulsGameplayTags.h"
 
 ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 {
-	//Initialize Combat Component
-	PlayerCombatComponent = CreateDefaultSubobject<UPlayerCombatComponent>("PlayerCombatComponent");
 
-	//Initialize Camera
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
-	SpringArm->TargetArmLength = 300.0f; // The camera follows at this distance behind the character
-	SpringArm->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	SpringArm->TargetArmLength = 300.0f;
+	SpringArm->bUsePawnControlRotation = true;
 
-	// Create the follow camera
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName); // Attach the camera to the end of the boom
-	Camera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
+	Camera->bUsePawnControlRotation = false;
 
 	EquippedItem = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EquippedItemMesh"));
 	EquippedItem->SetupAttachment(GetMesh(), TEXT("hand_r"));
-	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
@@ -57,7 +50,6 @@ ASoulsPlayerCharacter::ASoulsPlayerCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-/** Called when the game starts or when spawned */
 void ASoulsPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -75,7 +67,6 @@ void ASoulsPlayerCharacter::BeginPlay()
 				PlayerHUD->UpdateStaminaBar(MaxStamina, MaxStamina);
 			}
 		}
-		//Static call for now, planning to implement based on a save file
 
 		AbilitySystemComponent->AddLooseGameplayTag(FSoulsGameplayTags::Get().Identity_Player);
 		AbilitySystemComponent->AddLooseGameplayTag(FSoulsGameplayTags::Get().Class_Knight);
@@ -83,117 +74,114 @@ void ASoulsPlayerCharacter::BeginPlay()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<
 			UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Mapping Context Found"));
 			Subsystem->AddMappingContext(MyInputMappingContext, 1);
 		}
 	}
 }
 
-/** Called every frame */
 void ASoulsPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	UpdateTargetLock();
 }
 
-/** Called when the character is possessed by a controller */
 void ASoulsPlayerCharacter::PossessedBy(AController* NewController)
 {
-	// Call the base class version
 	Super::PossessedBy(NewController);
 
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
-	// Initialize the attributes and give default abilities
 	InitializeAttributes();
 	GiveDefaultAbilities();
 	printAttributes();
 }
 
-/** Called when the player state is replicated */
 void ASoulsPlayerCharacter::OnRep_PlayerState()
 {
-	// Call the base class version
 	Super::OnRep_PlayerState();
 
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
-	// Initialize the attributes and give default abilities
 	InitializeAttributes();
 	GiveDefaultAbilities();
 	printAttributes();
 }
 
-///////////////////////////////////////////////////             Attribute Functions                ///////////////////////////////////////////////////////////
-
-/* Initialize the character's attributes */
 void ASoulsPlayerCharacter::InitializeAttributes()
 {
 	ApplyGameplayEffectToSelf(StartingStatEffect);
 	ApplyGameplayEffectToSelf(RechargeStaminaEffect);
 }
 
-/** Combat Interface Implementations **/
-void ASoulsPlayerCharacter::StartDamageTrace_Implementation() const
+float ASoulsPlayerCharacter::CalculateBlockedDamage(float DamageAmount)
 {
-	if (PlayerCombatComponent)
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC) return DamageAmount;
+	
+	const FGameplayTagContainer& CurrTags = ASC->GetOwnedGameplayTags();
+	for (const FGameplayTag& Tag : CurrTags)
 	{
+		if (Tag == FGameplayTag::RequestGameplayTag(FName("State.IsBlocking")))
+		{
+			return DamageAmount * 0.6f;
+		}
+	}
+	return DamageAmount;
+}
+
+void ASoulsPlayerCharacter::UpdateHealth(float NewHealth)
+{
+	if (PlayerHUD)
+	{
+		PlayerHUD->UpdateHealthBar(NewHealth, MaxHealth);
 	}
 }
 
-void ASoulsPlayerCharacter::EndDamageTrace_Implementation() const
+void ASoulsPlayerCharacter::HandleDeath()
 {
-	if (PlayerCombatComponent)
+	if (bIsDead) return;
+	Die();
+}
+
+void ASoulsPlayerCharacter::PlayHitAnimation()
+{
+	if (!HitMontage) return;
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
 	{
+		AnimInstance->Montage_Play(HitMontage);
 	}
 }
 
 void ASoulsPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("HERE IS THE DAMAGE AMOUNT %f"), DamageAmount);
 	Super::SoulsTakeDamage(DamageAmount, DamageType);
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
-	bool isBlocking = false;
 	if (bIsInvulnerable) return;
-	if (ASC)
+	
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (!ASC) return;
+	
+	DamageAmount = CalculateBlockedDamage(DamageAmount);
+	
+	const FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
+	const float CurrentHealth = ASC->GetNumericAttribute(HealthAttribute);
+	const float NewHealth = CurrentHealth - DamageAmount;
+	ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
+	
+	UpdateHealth(NewHealth);
+	
+	if (NewHealth <= 0)
 	{
-		const FGameplayTagContainer& CurrTags = ASC->GetOwnedGameplayTags();
-		for (const FGameplayTag& Tag : CurrTags)
-		{
-			if (Tag == FGameplayTag::RequestGameplayTag(FName("State.IsBlocking")))
-			{
-				DamageAmount = DamageAmount * .6;
-				isBlocking = true;
-				break;
-			}
-		}
-		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
-		float CurrentHealth = ASC->GetNumericAttribute(HealthAttribute);
-		float NewHealth = CurrentHealth - DamageAmount;
-		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
-		CurrentHealth = ASC->GetNumericAttribute(HealthAttribute);
-		if (PlayerHUD)
-		{
-			PlayerHUD->UpdateHealthBar(CurrentHealth, MaxHealth);
-		}
-		if (CurrentHealth <= 0 && !bIsDead)
-		{
-			Die();
-		}
-		else
-		{
-			if (HitMontage)
-			{
-				UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-				if (AnimInstance)
-				{
-					AnimInstance->Montage_Play(HitMontage);
-				}
-			}
-		}
+		HandleDeath();
+	}
+	else
+	{
+		PlayHitAnimation();
 	}
 }
 
@@ -211,7 +199,6 @@ void ASoulsPlayerCharacter::SoulsHeal(float HealAmount)
 void ASoulsPlayerCharacter::Die()
 {
 	Super::Die();
-	UE_LOG(LogTemp, Warning, TEXT("Player Died"));
 	OnPlayerKilled.Broadcast(this);
 	this->GetMesh()->SetSimulatePhysics(true);
 	this->GetCharacterMovement()->DisableMovement();
@@ -276,14 +263,11 @@ bool ASoulsPlayerCharacter::UseStamina(const float StaminaAmnt)
 }
 
 
-///////////////////////////////////////////////////             Abilities                ///////////////////////////////////////////////////////////////////
-//Apply a gameplay effect to player
 void ASoulsPlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> EffectToApply)
 {
 	if (AbilitySystemComponent && EffectToApply)
 	{
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
-		//EffectContext.AddSourceObject(this);
 
 		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(
 			EffectToApply, 1.0f, EffectContext);
@@ -295,25 +279,19 @@ void ASoulsPlayerCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffec
 	}
 }
 
-/** Give the character default abilities */
 void ASoulsPlayerCharacter::GiveDefaultAbilities()
 {
-	// Grant abilities, but only on the server
 	if (HasAuthority() && AbilitySystemComponent)
 	{
-		// Give the default abilities, using the default level of 1
 		for (TSubclassOf<UGameplayAbility>& StartupAbility : DefaultAbilities)
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility, 1, 0));
 		}
-		//C++ Implemented Abilities
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AttackComboAbility, 1, 0));
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(DodgeAbility, 1, 0));
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(DrinkAbility, 1, 0));
 	}
 }
-
-///////////////////////////////////////////////////             Inputs                //////////////////////////////////////////////////////////////////////
 
 void ASoulsPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -372,19 +350,15 @@ void ASoulsPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedInputComponent->BindAction(IA_Drink, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Drink);
 		EnhancedInputComponent->BindAction(IA_SwapItem, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::SwapItem);
 		
-		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Dodge);
-		EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Attack);
+		EnhancedInputComponent->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Attack);
+		EnhancedInputComponent->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &ASoulsPlayerCharacter::Dodge);
 		
 	}
 }
 
-//In Combat Component now, will be migrated to Gameplay Ability Soon
 void ASoulsPlayerCharacter::LockCamera(const FInputActionValue& Value)
 {
-	if (PlayerCombatComponent)
-	{
-		PlayerCombatComponent->TargetLockCamera();
-	}
+	TargetLockCamera();
 }
 
 void ASoulsPlayerCharacter::Pickup_Implementation(TSubclassOf<UItem> Item)
@@ -431,9 +405,6 @@ void ASoulsPlayerCharacter::CheckItemCategory(UItem* item, int slot)
 		EquippedItem->SetStaticMesh(InventorySlots[equippedItemIndex]->ItemMesh);
 	}
 }
-void ASoulsPlayerCharacter::SetHealthProgressBar(float HealthProgress)
-{
-}
 
 void ASoulsPlayerCharacter::SetupStimulusSource()
 {
@@ -453,15 +424,6 @@ void ASoulsPlayerCharacter::EquipItem(TSubclassOf<UItem> Item)
 	}
 }
 
-void ASoulsPlayerCharacter::EquipWeapon(TSubclassOf<UItem> Item)
-{
-	if (UItem* ItemInstance = NewObject<UItem>(this, Item))
-	{
-		EquippedItem->SetStaticMesh(ItemInstance->ItemMesh);
-	}
-}
-
-//Blueprint for now, will be migrated to Gameplay Ability Soon
 void ASoulsPlayerCharacter::BlockComplete(const FInputActionValue& Value)
 {
 	if (AbilitySystemComponent)
@@ -474,31 +436,40 @@ void ASoulsPlayerCharacter::BlockComplete(const FInputActionValue& Value)
 	}
 }
 
+UItem* ASoulsPlayerCharacter::FindPotionInInventory(int32& OutSlotIndex)
+{
+	for (int32 i = 0; i < itemsPicked; i++)
+	{
+		if (InventorySlots[i] && InventorySlots[i]->ItemName == TEXT("Potion"))
+		{
+			OutSlotIndex = i;
+			return InventorySlots[i];
+		}
+	}
+	return nullptr;
+}
+
+void ASoulsPlayerCharacter::ConsumePotion(UItem* PotionItem, int32 SlotIndex)
+{
+	PotionItem->Number--;
+	if (PotionItem->Number == 0)
+	{
+		InventorySlots[SlotIndex] = nullptr;
+		PlayerHUD->GetInventoryWidget()->SetSlot(SlotIndex, nullptr, 0);
+	}
+	EquippedItem->SetStaticMesh(PotionItem->ItemMesh);
+	AbilitySystemComponent->TryActivateAbilityByClass(DrinkAbility);
+}
+
 void ASoulsPlayerCharacter::Drink(const FInputActionValue& Value)
 {
-	if (DrinkAbility)
-	{
-		int pI = 0;
-		UItem* PotionItem = nullptr;
-		for (int i = 0; i < itemsPicked; i++)
-		{
-			if (InventorySlots[i] && InventorySlots[i]->ItemName == TEXT("Potion"))
-			{
-				PotionItem = InventorySlots[i];
-				pI = i;
-			}
-		}
-		if (!PotionItem) return;
-		
-		PotionItem->Number--;
-		if (PotionItem->Number == 0)
-		{
-			InventorySlots[pI] = nullptr;
-			PlayerHUD->GetInventoryWidget()->SetSlot(pI, nullptr, 0);
-		}
-		EquippedItem->SetStaticMesh(PotionItem->ItemMesh);
-		AbilitySystemComponent->TryActivateAbilityByClass(DrinkAbility);
-	}
+	if (!DrinkAbility) return;
+	
+	int32 PotionSlotIndex = 0;
+	UItem* PotionItem = FindPotionInInventory(PotionSlotIndex);
+	if (!PotionItem) return;
+	
+	ConsumePotion(PotionItem, PotionSlotIndex);
 }
 
 void ASoulsPlayerCharacter::SwapItem(const FInputActionValue& Value)
@@ -517,7 +488,10 @@ void ASoulsPlayerCharacter::SwapItem(const FInputActionValue& Value)
 
 void ASoulsPlayerCharacter::Attack(const FInputActionValue& Value)
 {
-	AbilitySystemComponent->TryActivateAbilityByClass(AttackComboAbility);
+	if (InventorySlots[equippedItemIndex] != NULL && InventorySlots[equippedItemIndex]->ItemCategory.IsEqual("Weapons"))
+	{
+		AbilitySystemComponent->TryActivateAbilityByClass(AttackComboAbility);
+	}
 }
 
 void ASoulsPlayerCharacter::Dodge(const FInputActionValue& Value)
@@ -533,7 +507,6 @@ void ASoulsPlayerCharacter::Block(const FInputActionValue& Value)
 	AbilitySystemComponent->TryActivateAbilitiesByTag(BlockTagContainer);
 }
 
-//Blueprint for now, will be migrated to Gameplay Ability Soon
 void ASoulsPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 {
 	double stam;
@@ -544,7 +517,6 @@ void ASoulsPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		FGameplayTagContainer JumpTagContainer;
 		JumpTagContainer.AddTag(JumpTag);
 		AbilitySystemComponent->TryActivateAbilitiesByTag(JumpTagContainer);
-		//ApplyGameplayEffectToSelf(UseStamina);
 	}
 }
 
@@ -557,7 +529,6 @@ void ASoulsPlayerCharacter::MoveForward(const FInputActionValue& Value, UInputAc
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		//Make it slightly slower if going backwards
 		if (Value.Get<float>() < 0.0f)
 		{
 			AddMovementInput(Direction, (Value.Get<float>() / 1.4));
@@ -574,7 +545,6 @@ void ASoulsPlayerCharacter::MoveRight(const FInputActionValue& Value, UInputActi
 {
 	if (Controller && Value.Get<float>() != 0.0f)
 	{
-		// Get the forward direction
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
@@ -597,5 +567,91 @@ void ASoulsPlayerCharacter::LookUp(const FInputActionValue& Value)
 	if (Controller && Value.Get<float>() != 0.0f)
 	{
 		AddControllerPitchInput(Value.Get<float>());
+	}
+}
+
+void ASoulsPlayerCharacter::UpdateTargetLock()
+{
+	if (CameraLockActor)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			const FVector StartLocation = GetActorLocation();
+			const FVector TargetLocation = CameraLockActor->GetActorLocation();
+			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+			LookAtRotation.Pitch += -20.0f;
+			PlayerController->SetControlRotation(LookAtRotation);
+		}
+	}
+}
+
+void ASoulsPlayerCharacter::TargetLockCamera()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+
+	if (CameraLockActor && PlayerController)
+	{
+		CameraLockActor = nullptr;
+		MovementComponent->bOrientRotationToMovement = true;
+		MovementComponent->bUseControllerDesiredRotation = false;
+		if (TargetLockIcon)
+		{
+			TargetLockIcon->Destroy();
+		}
+		return;
+	}
+
+	if (PlayerController && !CameraLockActor)
+	{
+		APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager;
+		if (CameraManager)
+		{
+			USceneComponent* TransformComponent = CameraManager->GetTransformComponent();
+			FVector StartLocation = TransformComponent->GetComponentLocation();
+			StartLocation.Z += 50.0;
+			FVector ForwardVector = TransformComponent->GetForwardVector() * 1500.0f;
+			const FVector EndLocation = ForwardVector + StartLocation;
+			const float SphereRadius = 200.0f;
+
+			TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesArray;
+			ObjectTypesArray.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+			TArray<AActor*> IgnoreActors;
+			IgnoreActors.Add(this);
+			FHitResult OutHit;
+
+			const bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+				GetWorld(),
+				StartLocation,
+				EndLocation,
+				SphereRadius,
+				ObjectTypesArray,
+				false,
+				IgnoreActors,
+				EDrawDebugTrace::None,
+				OutHit,
+				true);
+
+			if (bHit && Cast<ACharacter>(OutHit.GetActor()))
+			{
+				CameraLockActor = OutHit.GetActor();
+				MovementComponent->bOrientRotationToMovement = false;
+				MovementComponent->bUseControllerDesiredRotation = true;
+
+				if (TargetLockIconClass)
+				{
+					const FVector SpawnLocation = FVector(0.0f, 0.0f, 20.0f);
+					const FRotator SpawnRotation = FRotator::ZeroRotator;
+					FActorSpawnParameters SpawnParams;
+					TargetLockIcon = GetWorld()->SpawnActor<AActor>(TargetLockIconClass, SpawnLocation, SpawnRotation, SpawnParams);
+					if (TargetLockIcon)
+					{
+						const FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepRelative, false);
+						TargetLockIcon->AttachToActor(CameraLockActor, AttachmentRules);
+					}
+				}
+			}
+		}
 	}
 }

@@ -9,13 +9,9 @@
 #include "GameFramework/SpringArmComponent.h"
 
 #include "BaseCharacter.h"
-#include "../PlayerCombatComponent.h"
-#include "../PlayerCombatInterface.h"
-#include "../SoulAttributeSet.h"
 #include "Components/ProgressBar.h"
 #include "Soulsborne/Items/Item.h"
 #include "Soulsborne/Items/PickupInterface.h"
-#include "Soulsborne/Items/WeaponItem.h"
 #include "Soulsborne/UI/PlayerHUDWidget.h"
 #include "SoulsPlayerCharacter.generated.h"
 
@@ -23,7 +19,7 @@
  *
  */
 UCLASS()
-class SOULSBORNE_API ASoulsPlayerCharacter : public ABaseCharacter, public IPlayerCombatInterface, public IPickupInterface
+class SOULSBORNE_API ASoulsPlayerCharacter : public ABaseCharacter, public IPickupInterface
 {
 	GENERATED_BODY()
 
@@ -42,11 +38,6 @@ protected:
 	virtual void InitializeAttributes();
 	virtual void Die() override;
 	
-
-	/* Player Combat Interface Functions*/
-	virtual void StartDamageTrace_Implementation() const override;
-	virtual void EndDamageTrace_Implementation() const override;
-
 	/*  Base Functions  */
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -70,18 +61,35 @@ protected:
 	virtual void LockCamera(const FInputActionValue& Value);
 
 	UFUNCTION()
-	virtual void Pickup_Implementation(TSubclassOf<UItem> Item);
+	virtual void Pickup_Implementation(TSubclassOf<UItem> Item) override;
 	void CheckItemCategory(UItem* item, int slot);
 	/**	----------------------------------- Properties ------------------------------------ **/
 public:
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
 	virtual void SoulsHeal(float HealAmount) override;
+	
+	float CalculateBlockedDamage(float DamageAmount);
+	void UpdateHealth(float NewHealth);
+	void HandleDeath();
+	void PlayHitAnimation();
+	
+	UItem* FindPotionInInventory(int32& OutSlotIndex);
+	void ConsumePotion(UItem* PotionItem, int32 SlotIndex);
 	void StartStaminaRegen();
+	
+	void TargetLockCamera();
+	void UpdateTargetLock();
 	void StopStaminaRegen();
 	void RegenStamina();
 	bool UseStamina(const float StaminaAmnt);
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	class UPlayerCombatComponent* PlayerCombatComponent;
+	UPROPERTY()
+	AActor* CameraLockActor;
+
+	UPROPERTY()
+	AActor* TargetLockIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Target Lock")
+	TSubclassOf<AActor> TargetLockIconClass;
 	
 	//This is used to determine which direction the player is moving towards for rolling / directional abilities
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
@@ -146,7 +154,4 @@ protected:
 	
 	UFUNCTION()
 	void EquipItem(TSubclassOf<UItem> Item);
-
-	UFUNCTION()
-	void EquipWeapon(TSubclassOf<UItem> Item);
 };

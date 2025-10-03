@@ -5,14 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemComponent.h"
-#include "../UI/ProgressBarInterface.h"
-#include "../SoulAttributeSet.h"
 #include "GameplayTagAssetInterface.h"
-
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Soulsborne/UI/ProgressBarInterface.h"
 #include "BaseCharacter.generated.h"
 
 UCLASS()
@@ -23,10 +18,7 @@ class SOULSBORNE_API ABaseCharacter : public ACharacter, public IProgressBarInte
 public:
 	ABaseCharacter();
 
-	//Returns the ASC for the Character
 	UAbilitySystemComponent* GetAbilitySystemComponent();
-
-	/* Getters for attributes set */
 	virtual void GetHealth_Implementation(double& Result) const override;
 	virtual void GetHealthAsRatio_Implementation(double& Result) const override;
 	virtual void GetStamina_Implementation(double& Result) const override;
@@ -34,18 +26,13 @@ public:
 	virtual void GetManaAsRatio_Implementation(double& Result) const override;
 	virtual void GetStaminaAsRatio_Implementation(double& Result) const override;
 
-	/* MISC */
-	void AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName);
 	const FKey GetMovementDirection(UInputAction* Action);
 	virtual void printAttributes();
 	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType);
 	virtual void SoulsHeal(float HealAmount);
-	virtual void Die();
 protected:
-	// Called when the game starts or when spawned
+	UPROPERTY()
 	UAbilitySystemComponent* AbilitySystemComponent;
-	
-	/*  Attributes */
 	UPROPERTY()
 	class USoulAttributeSet* Attributes;
 
