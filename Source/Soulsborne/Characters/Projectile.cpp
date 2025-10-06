@@ -35,11 +35,21 @@ void AProjectile::OnFire(const FVector& Direction)
 	SetActorRotation(Rotation);
 	SetActorEnableCollision(true);
 	ProjectileMovementComponent->Activate();
+	FTimerHandle TimerHandle;
+	/*
+	 *GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle,
+		[this]() { CollisionComponent->SetGenerateOverlapEvents(true); },
+		1.f, // small delay
+		false
+	);
+	*/
 }
 
 void AProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
+	UE_LOG(LogTemp, Error, TEXT("Projectile EndPlay: %d"), (int32)EndPlayReason);
 }
 
 
@@ -91,6 +101,15 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		Params
 	);
 
+	DrawDebugCapsule(
+	World,
+	(Start + End) * 0.5f,
+	(End - Start).Size() * 0.5f,
+	Sphere.GetSphereRadius(),
+	FRotationMatrix::MakeFromZ(End - Start).ToQuat(),
+	FColor::Green,
+	false,
+	1.0f);
 	RadialForce->FireImpulse();
 	if (bHit)
 	{
@@ -143,6 +162,15 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 		Params
 	);
 
+	DrawDebugCapsule(
+	World,
+	(Start + End) * 0.5f,
+	(End - Start).Size() * 0.5f,
+	Sphere.GetSphereRadius(),
+	FRotationMatrix::MakeFromZ(End - Start).ToQuat(),
+	FColor::Green,
+	false,
+	1.0f);
 	
 	if (bHit)
 	{
@@ -152,6 +180,11 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 			ABaseCharacter* Character = Cast<ABaseCharacter>(HitActor);
 			if (!Character)
 				continue;
+			
+			UAbilitySystemComponent* TargetASC = Character->GetAbilitySystemComponent();
+			if (!TargetASC)
+				continue;
+
 			
 			Character->SoulsTakeDamage(Damage, TEXT("Projectile"));
 		}

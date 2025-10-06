@@ -6,6 +6,7 @@
 #include "BaseCharacter.h"
 
 #include "BehaviorTree/BehaviorTreeTypes.h"
+#include "../PlayerCombatComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Soulsborne/Components/RotationComponent.h"
 #include "NonPlayerCharacter.generated.h"
@@ -42,6 +43,8 @@ protected:
 	virtual void OnRep_PlayerState() override;
 	void InitializeAttributes();
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	UPlayerCombatComponent* CombatComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
 	UAnimMontage* HitMontage;

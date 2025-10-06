@@ -2,22 +2,22 @@
 
 
 #include "BaseCharacter.h"
-
-#include "EnhancedInputSubsystems.h"
 #include "Sound/SoundAttenuation.h"
 #include "Components/ArrowComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Soulsborne/Abilities/SoulAttributeSet.h"
 
-
+// Sets default values
 ABaseCharacter::ABaseCharacter()
 {
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickGroup = TG_PrePhysics;
+	// Initialize the ability system component
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("AbilitySystemComponent");
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+	// Initialize the attribute set
 	Attributes = CreateDefaultSubobject<USoulAttributeSet>("AttributesSet");
 }
 
@@ -37,7 +37,21 @@ void ABaseCharacter::OnDeath()
 	bIsInvulnerable = true;
 	if (DeathSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation());
+		USoundAttenuation * SoundAttenuation = NewObject<USoundAttenuation>();
+		SoundAttenuation->Attenuation.bAttenuate = true;
+		SoundAttenuation->Attenuation.bSpatialize = true;
+		SoundAttenuation->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
+		SoundAttenuation->Attenuation.FalloffDistance = 1000.0f;
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			DeathSound,
+			GetActorLocation(),
+			GetActorRotation(),
+			1.0f,
+			1.0f,
+			0.0f,
+			SoundAttenuation
+			);
 	}
 	if (DeathMontage)
 	{
@@ -46,31 +60,51 @@ void ABaseCharacter::OnDeath()
 }
 
 
+//Used to attatch equipment to the socket name specified, currently static for development purposes
+void ABaseCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName) {
+	USkeletalMeshComponent* PlayerMesh = GetMesh();
+	if (PlayerMesh) {
+		FName rightSocketName = "righthandSocket";
+		FName leftSocketName = "lefthandSocket";
+		FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
+		FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
+		FActorSpawnParameters SpawnParams;
+	}
+}
 
+//Returns the key if the specified input action's key is being pressed
 const FKey ABaseCharacter::GetMovementDirection(UInputAction* Action)
 {
-	if (!Action) return FKey();
-	
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC) return FKey();
-	
-	ULocalPlayer* LP = PC->GetLocalPlayer();
-	if (!LP) return FKey();
-	
-	UEnhancedInputLocalPlayerSubsystem* EnhancedInputSubsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-	if (!EnhancedInputSubsystem) return FKey();
-	
-	TArray<FKey> KeysDown = EnhancedInputSubsystem->QueryKeysMappedToAction(Action);
-	for (const FKey& Key : KeysDown) {
-		if (PC->IsInputKeyDown(Key)) {
-			return Key;
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			UEnhancedInputLocalPlayerSubsystem* EnhancedInputSubsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+			if (EnhancedInputSubsystem)
+			{
+				TArray<FKey> KeysDown = EnhancedInputSubsystem->QueryKeysMappedToAction(Action);
+				for (const FKey Key : KeysDown) {
+					if (PC->IsInputKeyDown(Key)) {
+						return Key;
+					}
+				}
+			}
 		}
 	}
-	return FKey();
+	FKey KeyDown;
+	return KeyDown;
 }
 
 void ABaseCharacter::printAttributes()
 {
+	double result = 0;
+	GetHealth_Implementation(result);
+	UE_LOG(LogTemp, Warning, TEXT("Health: %f"), result);
+	GetStamina_Implementation(result);
+	UE_LOG(LogTemp, Warning, TEXT(" Stamina: %f"), result);
+	GetMana_Implementation(result);
+	UE_LOG(LogTemp, Warning, TEXT(" Mana: %f"), result);
+	UE_LOG(LogTemp, Warning, TEXT("Max Stat: %d"), MaxStat);
 }
 void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 {
@@ -78,25 +112,37 @@ void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
 	{
 		return;
 	}
-	if (DamagedFX){
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DamagedFX, GetActorLocation(), GetActorRotation(), true);
+	if (this->DamagedFX){
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			this->DamagedFX,
+			this->GetActorLocation(),
+			this->GetActorRotation(),
+			true
+			);
 	}
-	if (AttackedSound)
+	if (this->AttackedSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackedSound, GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(
+		this, this->AttackedSound, this->GetActorLocation());
 	}
 }
 
 void ABaseCharacter::SoulsHeal(float HealAmount)
 {
 	if (AbilitySystemComponent) {
-		const FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
-		const float CurrentHealth = AbilitySystemComponent->GetNumericAttribute(HealthAttribute);
-		const float NewHealth = FMath::Min(MaxHealth, CurrentHealth + HealAmount);
-		AbilitySystemComponent->SetNumericAttributeBase(HealthAttribute, NewHealth);
+	
+		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
+		float CurrentHealth = AbilitySystemComponent->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
+        float NewHealth = FMath::Min(MaxHealth, CurrentHealth + HealAmount);
+        AbilitySystemComponent->SetNumericAttributeBase(HealthAttribute, NewHealth);
 	}
+	
 }
 
+void ABaseCharacter::Die()
+{
+}
 
 void ABaseCharacter::SetMaxHealth(int NewMaxHealth)
 {
@@ -104,6 +150,7 @@ void ABaseCharacter::SetMaxHealth(int NewMaxHealth)
 		MaxHealth = NewMaxHealth;
 	}
 }
+/** Player Progress Bar Interface Implementations **/
 void ABaseCharacter::GetStamina_Implementation(double& Result) const {
 	if (AbilitySystemComponent) {
 		Result = AbilitySystemComponent->GetNumericAttribute(USoulAttributeSet::GetStaminaAttribute());
@@ -146,10 +193,12 @@ void ABaseCharacter::GetManaAsRatio_Implementation(double& Result) const {
 }
 
 void ABaseCharacter::GetHealthAsRatio_Implementation(double& Result) const {
-    if (AbilitySystemComponent) {
-        Result = AbilitySystemComponent->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) / MaxHealth;
-    }
-    else {
-        Result = 0.0f;
-    }
+	UE_LOG(LogTemp, Warning, TEXT("Actor Name: %s"), *this->GetName());
+
+	if (AbilitySystemComponent) {
+		Result = AbilitySystemComponent->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) / MaxHealth;
+	}
+	else {
+		Result = 0.0f;
+	}
 }

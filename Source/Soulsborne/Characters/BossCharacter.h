@@ -9,6 +9,9 @@
 #include "Soulsborne/Components/IBossCombatInterface.h"
 #include "BossCharacter.generated.h"
 
+/**
+ *
+ */
 UCLASS()
 class SOULSBORNE_API ABossCharacter : public ANonPlayerCharacter, public IBossCombatInterface
 {	GENERATED_BODY()
@@ -32,6 +35,7 @@ protected:
 public:
 	UFUNCTION()
 	void ChangeMesh(USkeletalMesh* NewMesh);
+	/** Phase system */
 
 	UPROPERTY(EditAnywhere, Category="Abilities")
 	TSubclassOf<UGameplayAbility> LeapAbility;
@@ -54,9 +58,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
 	UBossHUDComponent* HUDComponent;
 
+	/** Enrage montage or death cinematic */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
 	UAnimMontage* EnrageMontage;
 
+	/** Intro montage (cutscene or intro roar) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Animations")
 	UAnimMontage* IntroMontage;
 	

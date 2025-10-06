@@ -84,6 +84,8 @@ void UBossLeap::PerformLeap()
 
 void UBossLeap::OnBossLanded(const FHitResult& Hit)
 {
+    GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Yellow, TEXT("Landed"));
+    UE_LOG(LogTemp, Warning, TEXT("BossLanded"));
     if (!Boss) return;
 
     if (AirLoopMontage)
@@ -98,7 +100,7 @@ void UBossLeap::OnBossLanded(const FHitResult& Hit)
 
     if (LandedSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(GetWorld(), LandedSound, Boss->GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this->GetWorld(), LandedSound, Boss->GetActorLocation(), Boss->GetActorRotation());
     }
 
     if (ShockwaveFX)
@@ -109,11 +111,11 @@ void UBossLeap::OnBossLanded(const FHitResult& Hit)
 
     if (ImpactSound)
     {
-        UGameplayStatics::PlaySoundAtLocation(GetWorld(), ImpactSound, Boss->GetActorLocation());
+        UGameplayStatics::PlaySoundAtLocation(this->GetWorld(), ImpactSound, Boss->GetActorLocation(), Boss->GetActorRotation());
     }
 
-    const FVector Center = Boss->GetActorLocation();
-    const float Radius = 600.f;
+    FVector Center = Boss->GetActorLocation();
+    float Radius = 600.f;
 
     TArray<FOverlapResult> HitResults;
     FCollisionShape Sphere = FCollisionShape::MakeSphere(Radius);
@@ -140,6 +142,7 @@ void UBossLeap::OnBossLanded(const FHitResult& Hit)
         }
     }
 
+    DrawDebugSphere(GetWorld(), Center, Radius, 32, FColor::Red, false, 2.0f);
 
     Boss->LandedDelegate.RemoveAll(this);
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
