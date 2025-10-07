@@ -16,8 +16,8 @@ APlayerEquipment::APlayerEquipment()
 	EndAttackTrace = CreateDefaultSubobject<UArrowComponent>("EndAttackTrace");
 	EndAttackTrace->SetupAttachment(SkeletalMesh);
 
-	minDamage = 2;
-	maxDamage = 5;
+	MinDamage = 2;
+	MaxDamage = 5;
 	DamageType = FName(TEXT("Neutral"));
 }
 

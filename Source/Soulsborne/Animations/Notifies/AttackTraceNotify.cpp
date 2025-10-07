@@ -7,6 +7,7 @@
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Soulsborne/Characters/BossCharacter.h"
+#include "Soulsborne/Characters/SoulsPlayerCharacter.h"
 
 void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration)
 {
@@ -25,6 +26,9 @@ void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
 				EventData.EventTag = EventTag;
 
 				ASC->HandleGameplayEvent(EventTag, &EventData);
+			}else if (ASoulsPlayerCharacter* PlayerCharacter = Cast<ASoulsPlayerCharacter>(Owner))
+			{
+				PlayerCharacter->StartDamageTrace_Implementation();
 			}
 		}
 	}

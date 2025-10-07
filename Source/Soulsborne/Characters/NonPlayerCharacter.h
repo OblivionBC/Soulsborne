@@ -6,7 +6,6 @@
 #include "BaseCharacter.h"
 
 #include "BehaviorTree/BehaviorTreeTypes.h"
-#include "../PlayerCombatComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Soulsborne/Components/RotationComponent.h"
 #include "NonPlayerCharacter.generated.h"
@@ -31,7 +30,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Boss|Phases")
 	URotationComponent* RotationComponent;
 protected:
-	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
+	virtual void SoulsTakeDamage(float DamageAmount, EDamageType DamageType) override;
 	UFUNCTION()
 	virtual void OnPlayerKilledHandler(AActor* KilledPlayer);
 	virtual void BeginPlay() override;
@@ -43,8 +42,6 @@ protected:
 	virtual void OnRep_PlayerState() override;
 	void InitializeAttributes();
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	UPlayerCombatComponent* CombatComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
 	UAnimMontage* HitMontage;

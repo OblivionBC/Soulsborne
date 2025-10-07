@@ -6,6 +6,7 @@
 #include "Components/ArrowComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Soulsborne/ENUM/DamageTypeENum.h"
 
 // Sets default values
 ABaseCharacter::ABaseCharacter()
@@ -106,7 +107,7 @@ void ABaseCharacter::printAttributes()
 	UE_LOG(LogTemp, Warning, TEXT(" Mana: %f"), result);
 	UE_LOG(LogTemp, Warning, TEXT("Max Stat: %d"), MaxStat);
 }
-void ABaseCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
+void ABaseCharacter::SoulsTakeDamage(float DamageAmount, EDamageType DamageType)
 {
 	if (bIsInvulnerable)
 	{

@@ -70,7 +70,6 @@ void UDodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 		{
 			Dodge(Owner);
 			Owner->bIsInvulnerable = true;
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("INVULNERABLE"));
 			
 		}
 	}
@@ -132,7 +131,6 @@ void UDodge::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplay
 	if (ActorInfo->AvatarActor.IsValid())
 	{
 		ABaseCharacter* Character = Cast<ABaseCharacter>(ActorInfo->AvatarActor.Get());
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("NOT INVULNERABLE"));
 
 		Character->bIsInvulnerable = false;
 		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();

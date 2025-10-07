@@ -2,7 +2,6 @@
 
 #include "AttackCombo.h"
 #include "../Characters/BaseCharacter.h"
-#include "../PlayerCombatComponent.h"
 #include "AbilitySystemComponent.h"	
 #include "../GameplayTags/SoulsGameplayTags.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -11,6 +10,7 @@
 
 UAttackCombo::UAttackCombo()
 {
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	AbilityInputAction = Cast<UInputAction>(StaticLoadObject(UInputAction::StaticClass(), nullptr, TEXT("/Game/Soulsbourne/Input/IA_Attack.IA_Attack")));
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> Montage(TEXT("/Game/Soulsbourne/Animations/Attacks/MONT_SwordAttackCombo.MONT_SwordAttackCombo"));
 
@@ -58,12 +58,15 @@ void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 {
 	AActor* Avatar = ActorInfo->AvatarActor.Get();
 	ChooseMontage(Avatar);
-	
+	bHoldingAttack = true;
+	bContinueCombo = false;
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	if (ASoulsPlayerCharacter* player = Cast<ASoulsPlayerCharacter>(Avatar))
 	{
 		if (!player->UseStamina(5.0f)) EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		player->StopStaminaRegen();
+		player->GetCharacterMovement()->bEnablePhysicsInteraction = false;
+
 	}
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
@@ -78,7 +81,6 @@ void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 			AbilityMontageEnded.BindUObject(this, &UAttackCombo::OnAbilityMontageEnd);
 			AnimInstance->Montage_Play(MontageToPlay);
 			AnimInstance->Montage_SetEndDelegate(AbilityMontageEnded, MontageToPlay);
-			
 		}
 	}
 }
@@ -109,6 +111,13 @@ void UAttackCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 
 void UAttackCombo::HandleInputPressedEvent(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle SpecHandle)
 {
+	if (ASoulsPlayerCharacter* player = Cast<ASoulsPlayerCharacter>(ActorInfo->AvatarActor.Get()))
+	{
+		if (!player->isHoldingWeapon())
+		{
+			return;
+		}
+	}
 	FGameplayAbilitySpec* Spec = ActorInfo->AbilitySystemComponent->FindAbilitySpecFromHandle(SpecHandle);
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 	Spec->InputPressed = true;

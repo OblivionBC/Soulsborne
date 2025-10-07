@@ -26,10 +26,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float minDamage;
+	float MinDamage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float maxDamage;
+	float MaxDamage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName DamageType;

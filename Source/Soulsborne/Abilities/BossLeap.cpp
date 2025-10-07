@@ -38,7 +38,7 @@ void UBossLeap::ActivateAbility(
         BossAIController->SetIsAttacking(true);
     }
 
-    UAbilityTask_WaitDelay* WaitTask = UAbilityTask_WaitDelay::WaitDelay(this, 1.0f);
+    UAbilityTask_WaitDelay* WaitTask = UAbilityTask_WaitDelay::WaitDelay(this, 0.0f);
     if (WaitTask)
     {
         WaitTask->OnFinish.AddDynamic(this, &UBossLeap::PerformLeap);
@@ -48,7 +48,6 @@ void UBossLeap::ActivateAbility(
 
 void UBossLeap::PerformLeap()
 {
-    GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Yellow, TEXT("BossLeap"));
     UE_LOG(LogTemp, Warning, TEXT("BossLeap"));
     if (!Boss || !PlayerTarget) return;
 
@@ -84,7 +83,6 @@ void UBossLeap::PerformLeap()
 
 void UBossLeap::OnBossLanded(const FHitResult& Hit)
 {
-    GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Yellow, TEXT("Landed"));
     UE_LOG(LogTemp, Warning, TEXT("BossLanded"));
     if (!Boss) return;
 
@@ -128,22 +126,22 @@ void UBossLeap::OnBossLanded(const FHitResult& Hit)
         Sphere
     );
 
+    TSet<ABaseCharacter*> HitActors;
     if (bHit)
     {
         for (FOverlapResult& Result : HitResults)
         {
             if (ABaseCharacter* HitActor = Cast<ABaseCharacter>(Result.GetActor()))
             {
-                if (HitActor != Boss)
+                if (HitActor != Boss && !HitActors.Contains(HitActor))
                 {
-                    HitActor->SoulsTakeDamage(30, TEXT("Blunt"));
+                    HitActor->SoulsTakeDamage(30, EDamageType::Blunt);
+                    HitActors.Add(HitActor);
                 }
             }
         }
     }
-
-    DrawDebugSphere(GetWorld(), Center, Radius, 32, FColor::Red, false, 2.0f);
-
+    
     Boss->LandedDelegate.RemoveAll(this);
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
@@ -154,7 +152,6 @@ void UBossLeap::EndAbility(const FGameplayAbilitySpecHandle Handle,
     bool bReplicateEndAbility, bool bWasCancelled)
 {
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-    GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Yellow, TEXT("BossAbilityEnded"));
     UE_LOG(LogTemp, Warning, TEXT("BossAbilityEnded"));
     if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
     {

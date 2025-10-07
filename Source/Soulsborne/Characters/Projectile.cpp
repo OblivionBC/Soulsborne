@@ -100,16 +100,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		Sphere,
 		Params
 	);
-
-	DrawDebugCapsule(
-	World,
-	(Start + End) * 0.5f,
-	(End - Start).Size() * 0.5f,
-	Sphere.GetSphereRadius(),
-	FRotationMatrix::MakeFromZ(End - Start).ToQuat(),
-	FColor::Green,
-	false,
-	1.0f);
+	
 	RadialForce->FireImpulse();
 	if (bHit)
 	{
@@ -120,7 +111,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			if (!Character)
 				continue;
 
-			Character->SoulsTakeDamage(Damage, TEXT("Projectile"));
+			Character->SoulsTakeDamage(Damage, EDamageType::Projectile);
 		}
 	}
 
@@ -161,16 +152,6 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 		Sphere,
 		Params
 	);
-
-	DrawDebugCapsule(
-	World,
-	(Start + End) * 0.5f,
-	(End - Start).Size() * 0.5f,
-	Sphere.GetSphereRadius(),
-	FRotationMatrix::MakeFromZ(End - Start).ToQuat(),
-	FColor::Green,
-	false,
-	1.0f);
 	
 	if (bHit)
 	{
@@ -186,7 +167,7 @@ void AProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 				continue;
 
 			
-			Character->SoulsTakeDamage(Damage, TEXT("Projectile"));
+			Character->SoulsTakeDamage(Damage, EDamageType::Projectile);
 		}
 	}
 	if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(GetWorld(), ImpactSound, GetActorLocation());

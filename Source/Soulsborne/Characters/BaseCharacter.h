@@ -13,6 +13,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Soulsborne/ENUM/DamageTypeENum.h"
 #include "BaseCharacter.generated.h"
 
 UCLASS()
@@ -38,7 +39,7 @@ public:
 	void AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName);
 	const FKey GetMovementDirection(UInputAction* Action);
 	virtual void printAttributes();
-	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType);
+	virtual void SoulsTakeDamage(float DamageAmount, EDamageType DamageType);
 	virtual void SoulsHeal(float HealAmount);
 	virtual void Die();
 protected:

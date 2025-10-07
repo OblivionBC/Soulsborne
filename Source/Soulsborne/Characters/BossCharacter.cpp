@@ -12,6 +12,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimInstance.h"
 #include "Soulsborne/Abilities/BossLeap.h"
+#include "Components/CapsuleComponent.h"
 #include "Soulsborne/Abilities/BossRockThrow.h"
 #include "Soulsborne/AI/BossAIController.h"
 #include "Soulsborne/Animations/BossAnimInstance.h"
@@ -26,7 +27,6 @@ ABossCharacter::ABossCharacter()
 	{
 		PhaseComponent->OnPhaseChanged.AddDynamic(this, &ABossCharacter::HandlePhaseChange);
 	}
-	
 }
 
 void ABossCharacter::BeginPlay()
@@ -65,7 +65,7 @@ void ABossCharacter::GiveDefaultAbilities()
 	}
 }
 
-void ABossCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType)
+void ABossCharacter::SoulsTakeDamage(float DamageAmount, EDamageType DamageType)
 {
 	Super::SoulsTakeDamage(DamageAmount, DamageType);
 	if (bIsInvulnerable)
@@ -144,16 +144,7 @@ void ABossCharacter::PerformBasicAttack()
 		Sphere,
 		QueryParams
 	);
-
-	DrawDebugCapsule(
-	World,
-	(Start + End) * 0.5f, // Midpoint of sweep
-	(End - Start).Size() * 0.5f, // Half-height of capsule
-	Sphere.GetSphereRadius(),
-	FRotationMatrix::MakeFromZ(End - Start).ToQuat(),
-	FColor::Green,
-	false,
-	1.0f);
+	
 	
 	if (bHit)
 	{
@@ -164,7 +155,7 @@ void ABossCharacter::PerformBasicAttack()
 			if (!Character)
 				continue;
 
-			Character->SoulsTakeDamage(30.f, TEXT("Slash"));
+			Character->SoulsTakeDamage(30.f, EDamageType::Slash);
 		}
 	}
 }

@@ -4,8 +4,8 @@
 #include "PlayerComboAttackNotify.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
-#include "Abilities/AttackCombo.h"
-#include "Characters/SoulsPlayerCharacter.h"
+#include "../../Abilities/AttackCombo.h"
+#include "../../Characters/SoulsPlayerCharacter.h"
 
 
 void UPlayerComboAttackNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
@@ -20,11 +20,9 @@ void UPlayerComboAttackNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 			UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
 			if (ASC)
 			{
-				// Retrieve the active abilities and find the combo attack ability
 				TArray<FGameplayAbilitySpec> ActiveAbilities = ASC->GetActivatableAbilities();
 				FGameplayTagContainer TagContainer;
 				TagContainer.AddTag(FGameplayTag::RequestGameplayTag(FName("Character.AttackCombo")));
-				ASC->GetActivatableAbilities();
 
 				for (FGameplayAbilitySpec Spec : ActiveAbilities)
 				{

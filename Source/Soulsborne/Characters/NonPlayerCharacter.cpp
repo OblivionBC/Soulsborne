@@ -20,7 +20,6 @@
 ANonPlayerCharacter::ANonPlayerCharacter()
 {
 	RotationComponent = CreateDefaultSubobject<URotationComponent>(TEXT("RotationComponent"));
-	CombatComponent = CreateDefaultSubobject< UPlayerCombatComponent>("PlayerCombatComponent");
 	if (!Attributes) {
 		Attributes = CreateDefaultSubobject<USoulAttributeSet>("AttributesSet");
 	}
@@ -74,7 +73,7 @@ void ANonPlayerCharacter::OnRep_PlayerState()
 	GiveDefaultAbilities();
 	printAttributes();
 }
-void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, FName DamageType) {
+void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, EDamageType DamageType) {
 	Super::SoulsTakeDamage(DamageAmount, DamageType);
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
 	if (bIsInvulnerable) return;
@@ -115,7 +114,10 @@ void ANonPlayerCharacter::OnPlayerKilledHandler(AActor* KilledPlayer)
 void ANonPlayerCharacter::OnDeath()
 {
 	Super::OnDeath();
-
+	if (DeathMontage)
+	{
+		PlayAnimMontage(DeathMontage);
+	}
 	//this->GetMesh()->SetSimulatePhysics(true);
 	DetachFromControllerPendingDestroy();
 }
@@ -153,10 +155,6 @@ void ANonPlayerCharacter::GiveDefaultAbilities()
 	// Grant abilities, but only on the server
 	if (HasAuthority() && AbilitySystemComponent)
 	{
-
-
-		//C++ Implemented Abilities
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UAttackCombo::StaticClass(), 1, 0));
-		//AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(UDodge::StaticClass(), 1, 0));
 	}
 }

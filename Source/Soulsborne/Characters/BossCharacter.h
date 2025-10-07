@@ -23,7 +23,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void OnDeath() override;
 	virtual void GiveDefaultAbilities() override;
-	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
+	virtual void SoulsTakeDamage(float DamageAmount, EDamageType DamageType) override;
 	virtual void OnPlayerKilledHandler(AActor* KilledPlayer) override;
 	UFUNCTION()
 	void HandlePhaseChange(int32 NewPhase);

@@ -9,8 +9,6 @@
 #include "GameFramework/SpringArmComponent.h"
 
 #include "BaseCharacter.h"
-#include "../PlayerCombatComponent.h"
-#include "../PlayerCombatInterface.h"
 #include "../Abilities/SoulAttributeSet.h"
 #include "Components/ProgressBar.h"
 #include "Soulsborne/Items/Item.h"
@@ -23,7 +21,7 @@
  *
  */
 UCLASS()
-class SOULSBORNE_API ASoulsPlayerCharacter : public ABaseCharacter, public IPlayerCombatInterface, public IPickupInterface
+class SOULSBORNE_API ASoulsPlayerCharacter : public ABaseCharacter, public IPickupInterface
 {
 	GENERATED_BODY()
 
@@ -34,7 +32,7 @@ public:
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerKilledSignature, AActor*, KilledPlayer);
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerKilledSignature OnPlayerKilled;
-	
+	bool IsHoldingWeapon();
 	
 
 protected:
@@ -42,11 +40,6 @@ protected:
 	virtual void InitializeAttributes();
 	virtual void Die() override;
 	
-
-	/* Player Combat Interface Functions*/
-	virtual void StartDamageTrace_Implementation() const override;
-	virtual void EndDamageTrace_Implementation() const override;
-
 	/*  Base Functions  */
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -71,17 +64,18 @@ protected:
 
 	UFUNCTION()
 	virtual void Pickup_Implementation(TSubclassOf<UItem> Item);
-	void CheckItemCategory(UItem* item, int slot);
+	void CheckItemCategory(UItem* Item, int slot);
 	/**	----------------------------------- Properties ------------------------------------ **/
 public:
-	virtual void SoulsTakeDamage(float DamageAmount, FName DamageType) override;
+	/* Player Combat Interface Functions*/
+	void StartDamageTrace_Implementation() const;
+	void EndDamageTrace_Implementation() const;
+	virtual void SoulsTakeDamage(float DamageAmount, EDamageType DamageType) override;
 	virtual void SoulsHeal(float HealAmount) override;
 	void StartStaminaRegen();
 	void StopStaminaRegen();
 	void RegenStamina();
 	bool UseStamina(const float StaminaAmnt);
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	class UPlayerCombatComponent* PlayerCombatComponent;
 	
 	//This is used to determine which direction the player is moving towards for rolling / directional abilities
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
@@ -102,14 +96,26 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TArray<UItem*> InventorySlots;
-	int itemsPicked = 0;
-	int equippedItemIndex = 0;
+	int ItemsPicked = 0;
+	int EquippedItemIndex = 0;
 	void SwapItem(const FInputActionValue& Value);
-	void Attack(const FInputActionValue& Value);
+	void StartAttack(const FInputActionValue& Value);
+	void EndAttack(const FInputActionValue& Value);
 	void Dodge(const FInputActionValue& Value);
 	FOnMontageEnded DrinkEnded;
 	
 protected:
+	void TargetLockCamera();
+	void UpdateTargetLock();
+
+	UPROPERTY()
+	AActor* CameraLockActor;
+
+	UPROPERTY()
+	AActor* TargetLockIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Target Lock")
+	TSubclassOf<AActor> TargetLockIconClass;
 	
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* CachedItemMesh;
@@ -136,7 +142,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	UProgressBar* HealthBar;
 	
-	void SetHealthProgressBar(float HealthProgress);
 	/* Input */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* MyInputMappingContext;
@@ -146,7 +151,4 @@ protected:
 	
 	UFUNCTION()
 	void EquipItem(TSubclassOf<UItem> Item);
-
-	UFUNCTION()
-	void EquipWeapon(TSubclassOf<UItem> Item);
 };
