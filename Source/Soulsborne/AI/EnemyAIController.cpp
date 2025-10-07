@@ -19,10 +19,10 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	if (ANonPlayerCharacter* NPC = Cast<ANonPlayerCharacter>(InPawn))
 	{
-		if (UBehaviorTree* tree = NPC->GetBehaviorTree())
+		if (UBehaviorTree* Tree = NPC->GetBehaviorTree())
 		{
 			UBlackboardComponent* BlackboardComp;
-			UseBlackboard(tree->BlackboardAsset, BlackboardComp);
+			UseBlackboard(Tree->BlackboardAsset, BlackboardComp);
 			Blackboard = BlackboardComp;
 			RunBehaviorTree(NPC->GetBehaviorTree());
 		}
@@ -51,9 +51,9 @@ void AEnemyAIController::SetupPerceptionSystem()
 
 void AEnemyAIController::OnTargetDetected(AActor* Actor, FAIStimulus const Stimulus)
 {
-	if (auto* const character = Cast<ASoulsPlayerCharacter>(Actor)) {
+	if (auto* const Character = Cast<ASoulsPlayerCharacter>(Actor)) {
 		GetBlackboardComponent()->SetValueAsBool("bSeeingTarget", Stimulus.WasSuccessfullySensed());
-		GetBlackboardComponent()->SetValueAsObject("targetActor", character);
-		AttackTarget = character;
+		GetBlackboardComponent()->SetValueAsObject("targetActor", Character);
+		AttackTarget = Character;
 	}
 }

@@ -70,9 +70,9 @@ protected:
 
 	void StartTurnToPlayer(FOnTurnFinished OnFinishedDelegate);
 
-	bool pauseDelegate = false;
-	bool useDesiredRotation = false;
-	bool orientRotationToMovement = false;
+	bool bPauseDelegate = false;
+	bool bUseDesiredRotation = false;
+	bool bOrientRotationToMovement = false;
 	UPROPERTY()
 	ABossCharacter* Boss;
 	FDelegateHandle MontageEndedHandle;

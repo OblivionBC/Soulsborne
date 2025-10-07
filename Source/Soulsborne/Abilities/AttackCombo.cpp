@@ -33,13 +33,13 @@ void UAttackCombo::OnAbilityMontageEnd(UAnimMontage* Montage, bool bInterrupted)
 
 void UAttackCombo::CheckContinueCombo(ACharacter* Character)
 {
-	bool hasStamina = true;
-	if (ASoulsPlayerCharacter* player = Cast<ASoulsPlayerCharacter>(Character))
+	bool bHasStamina = true;
+	if (ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(Character))
 	{
-		hasStamina = player->UseStamina(10.0f);
+		bHasStamina = Player->UseStamina(10.0f);
 
 	}
-	if ((bContinueCombo || bHoldingAttack) && hasStamina) {
+	if ((bContinueCombo || bHoldingAttack) && bHasStamina) {
 		bContinueCombo = false;
 	}
 	else {
@@ -61,11 +61,11 @@ void UAttackCombo::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	bHoldingAttack = true;
 	bContinueCombo = false;
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	if (ASoulsPlayerCharacter* player = Cast<ASoulsPlayerCharacter>(Avatar))
+	if (ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(Avatar))
 	{
-		if (!player->UseStamina(5.0f)) EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
-		player->StopStaminaRegen();
-		player->GetCharacterMovement()->bEnablePhysicsInteraction = false;
+		if (!Player->UseStamina(5.0f)) EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		Player->StopStaminaRegen();
+		Player->GetCharacterMovement()->bEnablePhysicsInteraction = false;
 
 	}
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
@@ -99,21 +99,21 @@ void UAttackCombo::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 		AnimInstance->OnMontageEnded.Clear();
 		AbilityMontageEnded.Unbind();
 	}
-	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(Character->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
+	if (UCharacterMovementComponent* Movement = Cast<UCharacterMovementComponent>(Character->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
 	{
-		movement->SetMovementMode(MOVE_Walking);
+		Movement->SetMovementMode(MOVE_Walking);
 	};
-	if (ASoulsPlayerCharacter *player = Cast<ASoulsPlayerCharacter>(Character))
+	if (ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(Character))
 	{
-		player->StartStaminaRegen();
+		Player->StartStaminaRegen();
 	}
 }
 
 void UAttackCombo::HandleInputPressedEvent(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpecHandle SpecHandle)
 {
-	if (ASoulsPlayerCharacter* player = Cast<ASoulsPlayerCharacter>(ActorInfo->AvatarActor.Get()))
+	if (ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(ActorInfo->AvatarActor.Get()))
 	{
-		if (!player->isHoldingWeapon())
+		if (!Player->IsHoldingWeapon())
 		{
 			return;
 		}
@@ -147,10 +147,10 @@ void UAttackCombo::OnRemoveAbility(const FGameplayAbilityActorInfo* ActorInfo, c
 void UAttackCombo::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
 {
 	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
-	if (ACharacter* character = Cast<ACharacter>(ActorInfo->OwnerActor)) {
+	if (ACharacter* Character = Cast<ACharacter>(ActorInfo->OwnerActor)) {
 
-		if (UAnimInstance* AnimInstance = character->GetMesh()->GetAnimInstance()) {
-			ChooseMontage(character);
+		if (UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance()) {
+			ChooseMontage(Character);
 			if (MontageToPlay) {
 				AnimInstance->Montage_Stop(0.2f, MontageToPlay);
 			}
@@ -164,11 +164,11 @@ void UAttackCombo::ChooseMontage(AActor* Avatar)
 	UE_LOG(LogTemp, Log, TEXT("In ChooseMontage: %s"), *Avatar->GetActorNameOrLabel());
 	
 	FGameplayTagContainer Tags;
-	if (ABaseCharacter* character = Cast<ABaseCharacter>(Avatar))
+	if (ABaseCharacter* Character = Cast<ABaseCharacter>(Avatar))
 	{
-		if (character->Ability1Mont)
+		if (Character->Ability1Mont)
 		{
-			MontageToPlay = character->Ability1Mont;
+			MontageToPlay = Character->Ability1Mont;
 		}
 	}
 	else

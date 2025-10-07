@@ -48,12 +48,12 @@ void UBTTask_PlayBossIntro::OnMontageEnded(UAnimMontage* Montage, bool bInterrup
 	if (BossCharacter && BossCharacter->HUDComponent)
 	{
 		BossCharacter->HUDComponent->SetBossHudVisible(true);
-		if (UBossPhaseComponent* cp = BossCharacter->PhaseComponent)
+		if (UBossPhaseComponent* CP = BossCharacter->PhaseComponent)
 		{
-			cp->SetPhase(1);
-			if (ABossAIController* controller = Cast<ABossAIController>(BossCharacter->GetController()))
+			CP->SetPhase(1);
+			if (ABossAIController* Controller = Cast<ABossAIController>(BossCharacter->GetController()))
 			{
-				controller->SetbIsCombatEngaged(true);
+				Controller->SetbIsCombatEngaged(true);
 				BossCharacter->bIsInvulnerable = false;
 			}
 		}

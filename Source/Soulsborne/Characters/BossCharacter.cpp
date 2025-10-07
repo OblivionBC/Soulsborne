@@ -39,10 +39,10 @@ void ABossCharacter::BeginPlay()
 	BehaviorTree = LoadObject<UBehaviorTree>(nullptr, TEXT("/Game/AI/BT_BossCPP.BT_BossCPP"));
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
-	if (ABossAIController* controller = Cast<ABossAIController>(GetController()))
+	if (ABossAIController* Controller = Cast<ABossAIController>(GetController()))
 	{
-		BossAIController = controller;
-		controller->SetbIsCombatEngaged(false);
+		BossAIController = Controller;
+		Controller->SetbIsCombatEngaged(false);
 	}
 	bIsInvulnerable = true;
 }
@@ -85,9 +85,9 @@ void ABossCharacter::OnPlayerKilledHandler(AActor* KilledPlayer)
 	UE_LOG(LogTemp, Warning, TEXT("Enemy AI detected player was killed!"));
 	GetCharacterMovement()->StopMovementImmediately();
 	
-	if (ABossAIController* controller = Cast<ABossAIController>(GetController()))
+	if (ABossAIController* Controller = Cast<ABossAIController>(GetController()))
 	{
-		controller->SetbIsPlayerDead(true);
+		Controller->SetbIsPlayerDead(true);
 	}
 	
 }
@@ -96,9 +96,9 @@ void ABossCharacter::HandlePhaseChange(int32 NewPhase)
 {
 	
 	UE_LOG(LogTemp, Display, TEXT("PhaseChange: %d"), NewPhase);
-	if (ABossAIController* ai = Cast<ABossAIController>(this->GetController()))
+	if (ABossAIController* AI = Cast<ABossAIController>(this->GetController()))
 	{
-		ai->SetbIsCombatEngaged(false);
+		AI->SetbIsCombatEngaged(false);
 	}
 	UBossAnimInstance* AnimInst = Cast<UBossAnimInstance>(this->GetMesh()->GetAnimInstance());
 	if (NewPhase == 1)

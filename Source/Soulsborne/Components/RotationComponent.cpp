@@ -27,10 +27,10 @@ void URotationComponent::StartSmoothTurnTo(FVector InTargetLocation, float InRot
 	}
 	
 	TargetLocation = InTargetLocation;
-	ACharacter * owner = Cast<ACharacter>(GetOwner());
+	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (InRotationSpeed == 0.0f)
 	{
-		RotationSpeed = owner->GetCharacterMovement()->RotationRate.Yaw;
+		RotationSpeed = Owner->GetCharacterMovement()->RotationRate.Yaw;
 	}else
 	{
 		RotationSpeed = InRotationSpeed;
@@ -79,10 +79,10 @@ void URotationComponent::StartSmoothTurnTo(AActor* NewTargetActor, float InRotat
 		OnFinishedDelegate.ExecuteIfBound();
 	}
 	TargetActor = NewTargetActor;
-	ACharacter * owner = Cast<ACharacter>(GetOwner());
+	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (InRotationSpeed <= 0.0f)
 	{
-		RotationSpeed = owner->GetCharacterMovement()->RotationRate.Yaw;
+		RotationSpeed = Owner->GetCharacterMovement()->RotationRate.Yaw;
 	}else
 	{
 		RotationSpeed = InRotationSpeed;
@@ -115,30 +115,30 @@ void URotationComponent::StopLockOn()
 	bIsLocked = false;
 	bIsTurning = false;
 	TargetActor = nullptr;
-	ACharacter * owner = Cast<ACharacter>(GetOwner());
-	if (ABossAIController* controller = Cast<ABossAIController>(owner->GetController()))
+	ACharacter* Owner = Cast<ACharacter>(GetOwner());
+	if (ABossAIController* Controller = Cast<ABossAIController>(Owner->GetController()))
 	{
-		controller->ClearFocus(EAIFocusPriority::Gameplay);
+		Controller->ClearFocus(EAIFocusPriority::Gameplay);
 	}
-	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(owner->GetCharacterMovement()))
+	if (UCharacterMovementComponent* Movement = Cast<UCharacterMovementComponent>(Owner->GetCharacterMovement()))
 	{
-		owner->bUseControllerRotationYaw = false;
-		movement->bOrientRotationToMovement = true;
-		movement->bUseControllerDesiredRotation = false;
+		Owner->bUseControllerRotationYaw = false;
+		Movement->bOrientRotationToMovement = true;
+		Movement->bUseControllerDesiredRotation = false;
 	}
 }
 void URotationComponent::LockOnTarget(AActor* NewTargetActor, float InRotationSpeed)
 {
-	ACharacter * owner = Cast<ACharacter>(GetOwner());
-	if (AAIController* controller = Cast<AAIController>(owner->GetController()))
+	ACharacter* Owner = Cast<ACharacter>(GetOwner());
+	if (AAIController* Controller = Cast<AAIController>(Owner->GetController()))
 	{
-		controller->SetFocus(NewTargetActor, EAIFocusPriority::Gameplay);
+		Controller->SetFocus(NewTargetActor, EAIFocusPriority::Gameplay);
 	}
-	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(owner->GetCharacterMovement()))
+	if (UCharacterMovementComponent* Movement = Cast<UCharacterMovementComponent>(Owner->GetCharacterMovement()))
 	{
-		owner->bUseControllerRotationYaw = true;
-		movement->bOrientRotationToMovement = false;
-		movement->bUseControllerDesiredRotation = true;
+		Owner->bUseControllerRotationYaw = true;
+		Movement->bOrientRotationToMovement = false;
+		Movement->bUseControllerDesiredRotation = true;
 	}
 	bIsLocked = true;
 	bIsTurning = true;

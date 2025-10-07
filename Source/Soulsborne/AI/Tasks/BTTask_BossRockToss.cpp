@@ -36,10 +36,10 @@ EBTNodeResult::Type UBTTask_BossRockToss::ExecuteTask(UBehaviorTreeComponent& Ow
 				if (InstancedAbility)
 				{
 					BossCharacter->GetCharacterMovement()->StopMovementImmediately();
-					if (ABossAIController * ai = Cast<ABossAIController>(BossCharacter->GetController()))
+					if (ABossAIController* AI = Cast<ABossAIController>(BossCharacter->GetController()))
 					{
-						ai->SetIsAttacking(true);
-						ai->ClearFocus(EAIFocusPriority::Gameplay);
+						AI->SetIsAttacking(true);
+						AI->ClearFocus(EAIFocusPriority::Gameplay);
 					}
 					InstancedAbility->OnGameplayAbilityEnded.AddUObject(this, &UBTTask_BossRockToss::OnAbilityEnded);
 					CachedASC->TryActivateAbility(Spec.Handle);
@@ -59,9 +59,9 @@ void UBTTask_BossRockToss::OnAbilityEnded(UGameplayAbility* Ability)
 	if (CachedOwnerComp)
 	{
 		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
-		if (ABossAIController * ai = Cast<ABossAIController>(BossCharacter->GetController()))
+		if (ABossAIController* AI = Cast<ABossAIController>(BossCharacter->GetController()))
 		{
-			ai->SetIsAttacking(false);
+			AI->SetIsAttacking(false);
 		}
 	}
 }

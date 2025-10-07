@@ -21,7 +21,7 @@ void UBTService_UpdateDistance::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 	AActor* Target = Cast<AActor>(BB->GetValueAsObject(TargetKey.SelectedKeyName));
 	if (Target)
 	{
-		APawn * Boss = AI->GetPawn();
+		APawn* Boss = AI->GetPawn();
 		float RawDistance = FVector::Dist(Boss->GetActorLocation(), Target->GetActorLocation());
 
 		float AdjustedDistance = RawDistance 

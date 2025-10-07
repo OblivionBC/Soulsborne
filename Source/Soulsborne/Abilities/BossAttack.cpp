@@ -92,9 +92,9 @@ void UBossAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 		Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 	}
 	GetAbilitySystemComponentFromActorInfo()->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag("State.Attacking"));
-	if (ABossAIController * ai = Cast<ABossAIController>(Boss->GetController()))
+	if (ABossAIController* AI = Cast<ABossAIController>(Boss->GetController()))
 	{
-		ai->SetIsAttacking(false);
+		AI->SetIsAttacking(false);
 	}
 	GetWorld()->GetTimerManager().ClearTimer(TurnTimerHandle);
 	if (Boss && PrimaryAttackMontage)
@@ -108,8 +108,8 @@ void UBossAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 	}
 	if (Boss && Boss->GetCharacterMovement())
 	{
-		Boss->GetCharacterMovement()->bUseControllerDesiredRotation = useDesiredRotation;
-		Boss->GetCharacterMovement()->bOrientRotationToMovement = orientRotationToMovement;
+	Boss->GetCharacterMovement()->bUseControllerDesiredRotation = bUseDesiredRotation;
+	Boss->GetCharacterMovement()->bOrientRotationToMovement = bOrientRotationToMovement;
 	}
 	Boss = nullptr;
 	PlayerTarget = nullptr;
@@ -135,8 +135,8 @@ void UBossAttack::StartTurnToPlayer(FOnTurnFinished OnFinishedDelegate)
 	
     if (UCharacterMovementComponent* MoveComp = Boss->GetCharacterMovement())
     {
-    	useDesiredRotation = MoveComp->bUseControllerDesiredRotation;
-    	orientRotationToMovement = MoveComp->bOrientRotationToMovement;
+    	bUseDesiredRotation = MoveComp->bUseControllerDesiredRotation;
+    	bOrientRotationToMovement = MoveComp->bOrientRotationToMovement;
         //MoveComp->bUseControllerDesiredRotation = true;
         //MoveComp->bOrientRotationToMovement = false;
     }
@@ -151,7 +151,7 @@ void UBossAttack::OnMontage1Completed()
 	UE_LOG(LogTemp, Display, TEXT("Montage 1 COmpleted"));
 	if (!pauseDelegate)
 	{
-		pauseDelegate = true;
+		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks);
         WaitDelayTask->OnFinish.AddDynamic(this, &UBossAttack::OnWaitDelayFinished);
         WaitDelayTask->ReadyForActivation();
@@ -162,7 +162,7 @@ void UBossAttack::OnMontage1InterruptedOrCancelled()
 {
 	if (!pauseDelegate)
 	{
-		pauseDelegate = true;
+		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks);
 		WaitDelayTask->OnFinish.AddDynamic(this, &UBossAttack::OnWaitDelayFinished);
 		WaitDelayTask->ReadyForActivation();
@@ -175,7 +175,7 @@ void UBossAttack::OnMontage2Completed()
 	// Attack 2 finished. Another pause.
 	if (!pauseDelegate)
 	{
-		pauseDelegate = true;
+		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks * .05);
 		WaitDelayTask->OnFinish.AddDynamic(this, &UBossAttack::OnWaitDelayFinishedAfterAttack2);
 		WaitDelayTask->ReadyForActivation();
@@ -186,7 +186,7 @@ void UBossAttack::OnMontage2InterruptedOrCancelled()
 	// Attack 1 finished. Now, pause.
 	if (!pauseDelegate)
 	{
-		pauseDelegate = true;
+		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks);
 		WaitDelayTask->OnFinish.AddDynamic(this, &UBossAttack::OnWaitDelayFinishedAfterAttack2);
 		WaitDelayTask->ReadyForActivation();
@@ -220,7 +220,7 @@ void UBossAttack::OnTurnToPlayerFinished()
 {
 	UE_LOG(LogTemp, Display, TEXT("OnTurnToPlayerFinished"));
     // Turn finished. Now, play Attack 2.
-	pauseDelegate = false;
+	bPauseDelegate = false;
 	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,
 		TEXT("PlayAttack2Task"), // Unique task name
@@ -248,7 +248,7 @@ void UBossAttack::OnTurnToPlayerFinished()
 void UBossAttack::OnWaitDelayFinishedAfterAttack2()
 {
 	UE_LOG(LogTemp, Display, TEXT("OnWaitDelayFinishedAfterAttack2"));
-	pauseDelegate = false;
+	bPauseDelegate = false;
 	// Pause finished. Now, play Attack 3.
 	UAbilityTask_PlayMontageAndWait* PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 		this,

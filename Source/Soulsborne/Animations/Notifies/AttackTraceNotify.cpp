@@ -15,7 +15,7 @@ void UAttackTraceNotify::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
 	{
 		if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner))
 		{
-			if (USoundBase * AttackSound = Owner->BaseAttackSound)
+			if (USoundBase* AttackSound = Owner->BaseAttackSound)
 			{
 				UGameplayStatics::PlaySoundAtLocation(Owner, AttackSound, Owner->GetActorLocation());
 			}

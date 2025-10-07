@@ -48,14 +48,14 @@ void UBTTask_PlayTwoIntro::OnMontageEnded(UAnimMontage* Montage, bool bInterrupt
 	if (BossCharacter && BossCharacter->HUDComponent)
 	{
 		BossCharacter->HUDComponent->SetBossHudVisible(true);
-		if (UBossPhaseComponent* cp = Cast<UBossPhaseComponent>(BossCharacter->GetComponentByClass(UBossPhaseComponent::StaticClass())))
+		if (UBossPhaseComponent* CP = Cast<UBossPhaseComponent>(BossCharacter->GetComponentByClass(UBossPhaseComponent::StaticClass())))
 		{
-			cp->SetPhase(2);
-			if (ABossAIController* controller = Cast<ABossAIController>(BossCharacter->GetController()))
+			CP->SetPhase(2);
+			if (ABossAIController* Controller = Cast<ABossAIController>(BossCharacter->GetController()))
 			{
-				controller->SetIsEnraged(true);
+				Controller->SetIsEnraged(true);
 				BossCharacter->bIsInvulnerable = false;
-				controller->SetbIsCombatEngaged(true);
+				Controller->SetbIsCombatEngaged(true);
 			}
 		}
 

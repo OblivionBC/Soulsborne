@@ -97,11 +97,11 @@ void ABossAIController::SetDistanceToTarget(float Distance)
 		BlackboardComp->SetValueAsFloat(BlackboardComp->GetKeyName(DistanceKey), Distance);
 	}
 }
-void ABossAIController::SetIsAttacking(bool isAttacking)
+void ABossAIController::SetIsAttacking(bool bIsAttacking)
 {
 	if (BlackboardComp)
 	{
-		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(IsAttackingKey), isAttacking);
+		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(IsAttackingKey), bIsAttacking);
 	}
 }
 
@@ -138,19 +138,19 @@ void ABossAIController::SetPhase(int32 Phase)
 	}
 }
 
-void ABossAIController::SetbIsCombatEngaged(bool engaged)
+void ABossAIController::SetbIsCombatEngaged(bool bEngaged)
 {
 	if (BlackboardComp)
 	{
-		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(bCombatEngagedKey), engaged);
+		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(bCombatEngagedKey), bEngaged);
 	}
 }
 
-void ABossAIController::SetbIsPlayerDead(bool isDead)
+void ABossAIController::SetbIsPlayerDead(bool bIsDead)
 {
 	if (BlackboardComp)
 	{
-		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(bIsPlayerDead), isDead);
+		BlackboardComp->SetValueAsBool(BlackboardComp->GetKeyName(bIsPlayerDead), bIsDead);
 	}
 }
 

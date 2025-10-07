@@ -36,9 +36,9 @@ public:
 	virtual void GetStaminaAsRatio_Implementation(double& Result) const override;
 
 	/* MISC */
-	void AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName);
+	void AttachEquipment(TSubclassOf<AActor> Equipment, FName SocketName);
 	const FKey GetMovementDirection(UInputAction* Action);
-	virtual void printAttributes();
+	virtual void PrintAttributes();
 	virtual void SoulsTakeDamage(float DamageAmount, EDamageType DamageType);
 	virtual void SoulsHeal(float HealAmount);
 	virtual void Die();

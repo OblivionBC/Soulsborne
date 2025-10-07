@@ -34,8 +34,8 @@ UBehaviorTree* ANonPlayerCharacter::GetBehaviorTree()
 void ANonPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	FName rightSocketName = "righthandSocket";
-	//AttatchEquipment(RHandArmamentClass, rightSocketName);
+	FName RightSocketName = "righthandSocket";
+	//AttachEquipment(RHandArmamentClass, RightSocketName);
 	ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
 	if (Player)
 	{
@@ -57,7 +57,7 @@ void ANonPlayerCharacter::PossessedBy(AController* NewController)
 	// Initialize the attributes and give default abilities
 	InitializeAttributes();
 	GiveDefaultAbilities();
-	printAttributes();
+	PrintAttributes();
 }
 
 void ANonPlayerCharacter::OnRep_PlayerState()
@@ -71,7 +71,7 @@ void ANonPlayerCharacter::OnRep_PlayerState()
 	// Initialize the attributes and give default abilities
 	InitializeAttributes();
 	GiveDefaultAbilities();
-	printAttributes();
+	PrintAttributes();
 }
 void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, EDamageType DamageType) {
 	Super::SoulsTakeDamage(DamageAmount, DamageType);
@@ -81,9 +81,9 @@ void ANonPlayerCharacter::SoulsTakeDamage(float DamageAmount, EDamageType Damage
 		/// Here can calculate the damage based on the damage type, for now we just do the damage amount
 		float CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		FGameplayAttribute HealthAttribute = USoulAttributeSet::GetHealthAttribute();
-		printAttributes();
+		PrintAttributes();
 		float NewHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute()) - DamageAmount;
-		printAttributes();
+		PrintAttributes();
 		ASC->SetNumericAttributeBase(HealthAttribute, NewHealth);
 		CurrentHealth = ASC->GetNumericAttribute(USoulAttributeSet::GetHealthAttribute());
 		if (CurrentHealth <= 0)

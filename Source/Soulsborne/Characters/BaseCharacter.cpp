@@ -38,7 +38,7 @@ void ABaseCharacter::OnDeath()
 	bIsInvulnerable = true;
 	if (DeathSound)
 	{
-		USoundAttenuation * SoundAttenuation = NewObject<USoundAttenuation>();
+		USoundAttenuation* SoundAttenuation = NewObject<USoundAttenuation>();
 		SoundAttenuation->Attenuation.bAttenuate = true;
 		SoundAttenuation->Attenuation.bSpatialize = true;
 		SoundAttenuation->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
@@ -62,13 +62,13 @@ void ABaseCharacter::OnDeath()
 
 
 //Used to attatch equipment to the socket name specified, currently static for development purposes
-void ABaseCharacter::AttatchEquipment(TSubclassOf<AActor> Equipment, FName socketName) {
+void ABaseCharacter::AttachEquipment(TSubclassOf<AActor> Equipment, FName SocketName) {
 	USkeletalMeshComponent* PlayerMesh = GetMesh();
 	if (PlayerMesh) {
-		FName rightSocketName = "righthandSocket";
-		FName leftSocketName = "lefthandSocket";
-		FTransform LeftSocketT = PlayerMesh->GetSocketTransform(leftSocketName);
-		FTransform RightSocketT = PlayerMesh->GetSocketTransform(rightSocketName);
+		FName RightSocketName = "righthandSocket";
+		FName LeftSocketName = "lefthandSocket";
+		FTransform LeftSocketT = PlayerMesh->GetSocketTransform(LeftSocketName);
+		FTransform RightSocketT = PlayerMesh->GetSocketTransform(RightSocketName);
 		FActorSpawnParameters SpawnParams;
 	}
 }
@@ -96,7 +96,7 @@ const FKey ABaseCharacter::GetMovementDirection(UInputAction* Action)
 	return KeyDown;
 }
 
-void ABaseCharacter::printAttributes()
+void ABaseCharacter::PrintAttributes()
 {
 	double result = 0;
 	GetHealth_Implementation(result);

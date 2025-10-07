@@ -27,9 +27,9 @@ void UBossPhaseComponent::SetPhase(int phase)
 	OnPhaseChanged.Broadcast(CurrentPhase);
 	if (OwnerBoss)
 	{
-		if (ABossAIController* ai = Cast<ABossAIController>(OwnerBoss->GetController()))
+		if (ABossAIController* AI = Cast<ABossAIController>(OwnerBoss->GetController()))
 		{
-			ai->SetPhase(phase);
+			AI->SetPhase(phase);
 		}
 	}
 }

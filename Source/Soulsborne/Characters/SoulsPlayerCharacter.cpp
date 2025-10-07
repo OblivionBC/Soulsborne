@@ -110,7 +110,7 @@ void ASoulsPlayerCharacter::PossessedBy(AController* NewController)
 	// Initialize the attributes and give default abilities
 	InitializeAttributes();
 	GiveDefaultAbilities();
-	printAttributes();
+	PrintAttributes();
 }
 
 /** Called when the player state is replicated */
@@ -126,7 +126,7 @@ void ASoulsPlayerCharacter::OnRep_PlayerState()
 	// Initialize the attributes and give default abilities
 	InitializeAttributes();
 	GiveDefaultAbilities();
-	printAttributes();
+	PrintAttributes();
 }
 
 ///////////////////////////////////////////////////             Attribute Functions                ///////////////////////////////////////////////////////////

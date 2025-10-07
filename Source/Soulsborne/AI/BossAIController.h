@@ -24,13 +24,13 @@ public:
 	void OnTargetDetected(AActor* Actor, FAIStimulus Stimulus);
 
 	void SetDistanceToTarget(float Distance);
-	void SetIsAttacking(bool isAttacking);
+	void SetIsAttacking(bool bIsAttacking);
 	// Convenience functions
 	void SetTargetActor(AActor* Target);
 	void SetIsEnraged(bool bIsEnraged);
 	void SetPhase(int32 Phase);
-	void SetbIsCombatEngaged(bool engaged);
-	void SetbIsPlayerDead(bool isDead);
+	void SetbIsCombatEngaged(bool bEngaged);
+	void SetbIsPlayerDead(bool bIsDead);
 	void UpdateHealthPercent(float Percent);
 	void SetShouldUseAbility(bool bValue);
 	int GetPhase();

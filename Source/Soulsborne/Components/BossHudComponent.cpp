@@ -19,10 +19,10 @@ void UBossHUDComponent::Initialize(const FText BossName, const float MaxHealth)
 	}
 }
 
-void UBossHUDComponent::SetBossHudVisible(bool toggle){
+void UBossHUDComponent::SetBossHudVisible(bool bToggle){
 	if (WidgetInstance)
 	{
-		if (toggle)
+		if (bToggle)
 		{
 			WidgetInstance->SetVisibility(ESlateVisibility::Visible);
 		}else

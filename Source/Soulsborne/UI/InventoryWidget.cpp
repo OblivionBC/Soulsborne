@@ -23,31 +23,31 @@ void UInventoryWidget::NativeConstruct()
 
 void UInventoryWidget::SetSlot(int SlotNum, UTexture2D* Icon, int Number)
 {
-	UImage* selectedIcon = Inventory[SlotNum];
-	if (selectedIcon)
+	UImage* SelectedIcon = Inventory[SlotNum];
+	if (SelectedIcon)
 	{
-		selectedIcon->SetBrushFromTexture(Icon);
+		SelectedIcon->SetBrushFromTexture(Icon);
 		SetCount(Number, SlotNum);
 	}
 }
 
 void UInventoryWidget::SetSlot(int SlotNum, UTexture2D* Icon)
 {
-	UImage* selectedIcon = Inventory[SlotNum];
-	if (selectedIcon)
+	UImage* SelectedIcon = Inventory[SlotNum];
+	if (SelectedIcon)
 	{
-		selectedIcon->SetBrushFromTexture(Icon);
+		SelectedIcon->SetBrushFromTexture(Icon);
 	}
 }
 
 void UInventoryWidget::SetEquipped(int SlotNum)
 {
-	int oldSlot = SlotNum - 1;
+	int OldSlot = SlotNum - 1;
 	if (SlotNum == 0)
 	{
-		oldSlot = 3;
+		OldSlot = 3;
 	}
-	Highlights[oldSlot]->SetVisibility(ESlateVisibility::Hidden);
+	Highlights[OldSlot]->SetVisibility(ESlateVisibility::Hidden);
 	Highlights[SlotNum]->SetVisibility(ESlateVisibility::Visible);
 }
 

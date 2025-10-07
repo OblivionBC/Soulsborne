@@ -38,9 +38,9 @@ EBTNodeResult::Type UBTTask_PerformAttack::ExecuteTask(UBehaviorTreeComponent& O
 				if (InstancedAbility)
 				{
 					BossCharacter->GetCharacterMovement()->StopMovementImmediately();
-					if (ABossAIController * ai = Cast<ABossAIController>(BossCharacter->GetController()))
+					if (ABossAIController* AI = Cast<ABossAIController>(BossCharacter->GetController()))
 					{
-						ai->SetIsAttacking(true);
+						AI->SetIsAttacking(true);
 					}
 					CachedASC->TryActivateAbility(Spec.Handle);
 					InstancedAbility->OnGameplayAbilityEnded.AddUObject(this, &UBTTask_PerformAttack::OnAbilityEnded);
@@ -60,9 +60,9 @@ void UBTTask_PerformAttack::OnAbilityEnded(UGameplayAbility* Ability)
 	if (CachedOwnerComp)
 	{
 		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
-		if (ABossAIController * ai = Cast<ABossAIController>(BossCharacter->GetController()))
+		if (ABossAIController* AI = Cast<ABossAIController>(BossCharacter->GetController()))
 		{
-			ai->SetIsAttacking(false);
+			AI->SetIsAttacking(false);
 		}
 	}
 }

@@ -56,14 +56,14 @@ void UDodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
 	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo) && ASC)
 	{
-		if (ASoulsPlayerCharacter *player = Cast<ASoulsPlayerCharacter>(ActorInfo->OwnerActor))
+		if (ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(ActorInfo->OwnerActor))
 		{
-			if (!player->UseStamina(15.0f))
+			if (!Player->UseStamina(15.0f))
 			{
 				EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 				return;
 			}
-			player->StopStaminaRegen();
+			Player->StopStaminaRegen();
 		}
 		ABaseCharacter* Owner = Cast<ABaseCharacter>(ActorInfo->OwnerActor);
 		if (Owner)
@@ -140,9 +140,9 @@ void UDodge::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplay
 			AnimInstance->OnMontageEnded.Clear();
 			AbilityMontageEnded.Unbind();
 		}
-		if (ASoulsPlayerCharacter *player = Cast<ASoulsPlayerCharacter>(Character))
+		if (ASoulsPlayerCharacter* Player = Cast<ASoulsPlayerCharacter>(Character))
 		{
-			player->StartStaminaRegen();
+			Player->StartStaminaRegen();
 		}
 	}
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

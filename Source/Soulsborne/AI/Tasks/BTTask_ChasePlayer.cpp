@@ -33,9 +33,9 @@ EBTNodeResult::Type UBTTask_ChasePlayer::ExecuteTask(UBehaviorTreeComponent& Own
 	RotComp = Cast<URotationComponent>(AIPawn->GetComponentByClass(URotationComponent::StaticClass()));
 	if (RotComp) RotComp->LockOnTarget(TargetActor, 300.0f);
 
-	if (UCharacterMovementComponent* movement = Cast<UCharacterMovementComponent>(AIPawn->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
+	if (UCharacterMovementComponent* Movement = Cast<UCharacterMovementComponent>(AIPawn->GetComponentByClass(UCharacterMovementComponent::StaticClass())))
 	{
-		movement->SetMovementMode(EMovementMode::MOVE_Walking);
+		Movement->SetMovementMode(EMovementMode::MOVE_Walking);
 	};
 	
 	AIController->MoveToActor(TargetActor, AcceptableDistance);

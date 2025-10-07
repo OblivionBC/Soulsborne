@@ -184,10 +184,10 @@ void UBossRockThrow::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
         		AnimInst->Montage_Stop(0.f);
         	}
         }
-	    if (UCharacterMovementComponent* movement = Boss->GetCharacterMovement())
+	    if (UCharacterMovementComponent* Movement = Boss->GetCharacterMovement())
 	    {
-	        movement->bOrientRotationToMovement = false;
-	        movement->MaxWalkSpeed = 600.0f;
+	        Movement->bOrientRotationToMovement = false;
+	        Movement->MaxWalkSpeed = 600.0f;
 	    }
 	}
 	
