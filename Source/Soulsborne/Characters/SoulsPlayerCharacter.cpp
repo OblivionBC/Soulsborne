@@ -570,9 +570,6 @@ void ASoulsPlayerCharacter::CheckItemCategory(UItem* Item, int slot)
 		EquippedItem->SetStaticMesh(InventorySlots[EquippedItemIndex]->ItemMesh);
 	}
 }
-void ASoulsPlayerCharacter::SetHealthProgressBar(float HealthProgress)
-{
-}
 
 void ASoulsPlayerCharacter::SetupStimulusSource()
 {

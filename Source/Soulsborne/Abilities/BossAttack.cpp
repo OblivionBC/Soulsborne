@@ -149,7 +149,7 @@ void UBossAttack::OnMontage1Completed()
 {
     // Attack 1 finished. Now, pause.
 	UE_LOG(LogTemp, Display, TEXT("Montage 1 COmpleted"));
-	if (!pauseDelegate)
+	if (!bPauseDelegate)
 	{
 		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks);
@@ -160,7 +160,7 @@ void UBossAttack::OnMontage1Completed()
 
 void UBossAttack::OnMontage1InterruptedOrCancelled()
 {
-	if (!pauseDelegate)
+	if (!bPauseDelegate)
 	{
 		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks);
@@ -173,7 +173,7 @@ void UBossAttack::OnMontage2Completed()
 {
 	UE_LOG(LogTemp, Display, TEXT("Montage 2 COmpleted"));
 	// Attack 2 finished. Another pause.
-	if (!pauseDelegate)
+	if (!bPauseDelegate)
 	{
 		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks * .05);
@@ -184,7 +184,7 @@ void UBossAttack::OnMontage2Completed()
 void UBossAttack::OnMontage2InterruptedOrCancelled()
 {
 	// Attack 1 finished. Now, pause.
-	if (!pauseDelegate)
+	if (!bPauseDelegate)
 	{
 		bPauseDelegate = true;
 		UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, PauseTimeBetweenAttacks);

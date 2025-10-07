@@ -39,10 +39,10 @@ void ABossCharacter::BeginPlay()
 	BehaviorTree = LoadObject<UBehaviorTree>(nullptr, TEXT("/Game/AI/BT_BossCPP.BT_BossCPP"));
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
-	if (ABossAIController* Controller = Cast<ABossAIController>(GetController()))
+	if (ABossAIController* BossController = Cast<ABossAIController>(GetController()))
 	{
-		BossAIController = Controller;
-		Controller->SetbIsCombatEngaged(false);
+		BossAIController = BossController;
+		BossController->SetbIsCombatEngaged(false);
 	}
 	bIsInvulnerable = true;
 }
@@ -85,9 +85,9 @@ void ABossCharacter::OnPlayerKilledHandler(AActor* KilledPlayer)
 	UE_LOG(LogTemp, Warning, TEXT("Enemy AI detected player was killed!"));
 	GetCharacterMovement()->StopMovementImmediately();
 	
-	if (ABossAIController* Controller = Cast<ABossAIController>(GetController()))
+	if (ABossAIController* BossController = Cast<ABossAIController>(GetController()))
 	{
-		Controller->SetbIsPlayerDead(true);
+		BossController->SetbIsPlayerDead(true);
 	}
 	
 }

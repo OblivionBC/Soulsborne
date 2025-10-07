@@ -23,8 +23,10 @@ protected:
 private:
 	FTimerHandle TurnTimeoutHandle;
 	float TurnTimeoutDuration = 5.0f;
-	AActor* Owner = nullptr;
+	UPROPERTY()
+	ACharacter* Owner = nullptr;
 	FVector TargetLocation;
+	UPROPERTY()
 	AActor* TargetActor = nullptr;
 	float RotationSpeed = 5.0f;
 	FSimpleDelegate OnFinishedDelegate;

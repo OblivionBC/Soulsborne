@@ -16,7 +16,7 @@ void URotationComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Warning, TEXT("IsRegistered: %s"), IsRegistered() ? TEXT("true") : TEXT("false"));
-	Owner = GetOwner();
+	Owner = Cast<ACharacter>(GetOwner());
 }
 
 void URotationComponent::StartSmoothTurnTo(FVector InTargetLocation, float InRotationSpeed, FSimpleDelegate OnFinished)
@@ -27,7 +27,11 @@ void URotationComponent::StartSmoothTurnTo(FVector InTargetLocation, float InRot
 	}
 	
 	TargetLocation = InTargetLocation;
-	ACharacter* Owner = Cast<ACharacter>(GetOwner());
+	
+	if (!Owner)
+	{
+		return;
+	}
 	if (InRotationSpeed == 0.0f)
 	{
 		RotationSpeed = Owner->GetCharacterMovement()->RotationRate.Yaw;
@@ -38,11 +42,7 @@ void URotationComponent::StartSmoothTurnTo(FVector InTargetLocation, float InRot
 	
 	OnFinishedDelegate = OnFinished;
 	bIsTurning = true;
-
-	if (!Owner)
-	{
-		Owner = GetOwner();
-	}
+	
 	SetComponentTickEnabled(true);
 	UE_LOG(LogTemp, Display, TEXT("Rotation Component Started"));
 	if (GetWorld())
@@ -64,11 +64,7 @@ void URotationComponent::StartSmoothTurnTo(const FVector InTargetLocation, const
 	RotationSpeed = InRotationSpeed;
 	
 	bIsTurning = true;
-
-	if (!Owner)
-	{
-		Owner = GetOwner();
-	}
+	
 	SetComponentTickEnabled(true);
 }
 
@@ -79,7 +75,6 @@ void URotationComponent::StartSmoothTurnTo(AActor* NewTargetActor, float InRotat
 		OnFinishedDelegate.ExecuteIfBound();
 	}
 	TargetActor = NewTargetActor;
-	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (InRotationSpeed <= 0.0f)
 	{
 		RotationSpeed = Owner->GetCharacterMovement()->RotationRate.Yaw;
@@ -90,11 +85,7 @@ void URotationComponent::StartSmoothTurnTo(AActor* NewTargetActor, float InRotat
 	
 	OnFinishedDelegate = OnFinished;
 	bIsTurning = true;
-
-	if (!Owner)
-	{
-		Owner = GetOwner();
-	}
+	
 	SetComponentTickEnabled(true);
 	UE_LOG(LogTemp, Display, TEXT("Rotation Component Started"));
 	if (GetWorld())
@@ -115,7 +106,6 @@ void URotationComponent::StopLockOn()
 	bIsLocked = false;
 	bIsTurning = false;
 	TargetActor = nullptr;
-	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (ABossAIController* Controller = Cast<ABossAIController>(Owner->GetController()))
 	{
 		Controller->ClearFocus(EAIFocusPriority::Gameplay);
@@ -129,7 +119,6 @@ void URotationComponent::StopLockOn()
 }
 void URotationComponent::LockOnTarget(AActor* NewTargetActor, float InRotationSpeed)
 {
-	ACharacter* Owner = Cast<ACharacter>(GetOwner());
 	if (AAIController* Controller = Cast<AAIController>(Owner->GetController()))
 	{
 		Controller->SetFocus(NewTargetActor, EAIFocusPriority::Gameplay);
@@ -142,11 +131,6 @@ void URotationComponent::LockOnTarget(AActor* NewTargetActor, float InRotationSp
 	}
 	bIsLocked = true;
 	bIsTurning = true;
-
-	if (!Owner)
-	{
-		Owner = GetOwner();
-	}
 }
 
 void URotationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
