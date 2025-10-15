@@ -1,6 +1,9 @@
 # Visual Studio 2022 user specific files
 .vs/
 .idea/
+*.vsconfig
+
+
 # Files greater then 100MB
 Content/Weapon_Pack/*
 Content/Weapon_Pack/Map/Weapons_Kit_BuiltData.uasset
